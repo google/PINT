@@ -77,6 +77,20 @@ different versions of a structure.
 
 ### Integrity Rationale
 
+The FMD structure does not carry a signature or any other integrity protection
+mechanism. This is because the goal of the FMD is to tell the RTM what to
+measure during boot to allow the verifier to make a trust determination
+about what was booted.
+
+If the measurement reported by the RTM after boot matches the Verifier's
+expectation this necessarily implies:
+
+1. The FMD in flash matches the FMD the Verifier expected
+1. The contents of the specified regions matches what the Verifier expected
+
+Any change to the FMD or to the contents of the measured regions will be
+reflected in the measurement.
+
 ### Measuring regions
 
 Measuring the regions specified in the FMD descriptor entails computing a
@@ -84,20 +98,24 @@ hash over all regions in the order they appear in the descriptor. The hash
 should be computed using the function specified by
 `image_descriptor.region_info.hash_type`.
 
-The measurement of a region `a` should be:
+Since the CPU boots from a specific location (the reset vector), the location
+in flash of the measured data is also important. Two regions with the same
+content but at different locations in flash should not have the same
+measurement. To achieve this, the measurement of a region `a` should be:
+
 ```
 hash(a.region_offset ||
      a.region_size ||
-     {a.region_offset, a.region_offset + a.region_size})
+     flash_contents(a.region_offset, a.region_offset + a.region_size))
 ```
 
 ## Example Boot Process
 
 The FMD descriptor is intended to be consumed by an RTM during boot. One example
-of such a boot process would be an RTM which interposes on boot flash and
-measures code before it is run by the CPU.
+of such a boot process would be an RTM which interposes on flash and measures
+code before it is run by the CPU.
 
-{placeholder: image of topology}
+![RTM interposing between CPU and flash](img/rtm-flash-interposer.png)
 
 An example boot could be the following:
 1. RTM powers on.
@@ -113,11 +131,12 @@ An example boot could be the following:
 In addition to the descriptor format, a reference library is also provided for
 creating and parsing the descriptor.
 
-### Descriptor Creation
+Source for the library can be found in the [lib](lib/) directory. Public
+headers are in [inc/fmd](inc/fmd/).
 
-TODO
+### Samples
 
-### Descriptor Parsing
+The [samples directory](samples/) contains example code which uses the
+reference library to do common FMD-related tasks.
 
-TODO
-
+* **create\_parse**: Generate, serialize, and parse an FMD descriptor
