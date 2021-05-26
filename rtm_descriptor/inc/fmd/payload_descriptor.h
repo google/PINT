@@ -14,8 +14,8 @@
  *  ----------------------------------------------------------------------------
  */
 
-#define HASH_SHA1 0
-#define HASH_SHA256 1
+#define FMD_HASH_SHA1 0
+#define FMD_HASH_SHA256 1
 
 #define PAYLOAD_DESCRIPTOR_HEADER_TAG 0
 #define PAYLOAD_REGION_INFO_TAG 1
@@ -32,7 +32,7 @@ struct tlv_header {
 };
 
 struct payload_region_info {
-  struct tlv_header header;
+  struct tlv_header tlv;
 
   uint32_t region_count;
 
@@ -40,7 +40,7 @@ struct payload_region_info {
 };
 
 struct payload_region {
-  struct tlv_header header;
+  struct tlv_header tlv;
 
   uint8_t region_name[32];  /* null-terminated ASCII string */
 
@@ -50,7 +50,7 @@ struct payload_region {
 };
 
 struct payload_descriptor_header {
-  struct tlv_header header;
+  struct tlv_header tlv;
 
   /* The offset is relative to the start of the image data. */
   uint32_t descriptor_offset;
