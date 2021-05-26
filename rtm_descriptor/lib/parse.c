@@ -29,19 +29,30 @@ int parse_payload_region(struct payload_region *region, uint32_t region_idx,
   return FMD_SUCCESS;
 }
 
-int parse_descriptor(void *flash_addr, struct image_descriptor *descriptor) {
-  struct payload_descriptor_header *desc_header = (struct payload_descriptor_header *)flash_addr;
+int parse_header(struct payload_descriptor_header *header, struct image_descriptor *descriptor) {
+  if (header->tlv.version != PAYLOAD_DESCRIPTOR_HEADER_VERSION) {
+    return FMD_ERROR_UNKNOWN_VERSION;
+  }
 
-  // Copy descriptor header
+  // Header is assumed to be the first TLV structure. Fail if this structure is
+  // not the descriptor header.
+  if (header->tlv.tag != PAYLOAD_DESCRIPTOR_HEADER_TAG ||
+      header->magic != FMD_MAGIC) {
+    return FMD_ERROR_INVALID_FORMAT;
+  }
+
   memcpy(&descriptor->header, desc_header, sizeof(struct payload_descriptor_header));
+}
+
+int parse_descriptor(void *flash_addr, struct image_descriptor *descriptor) {
+  int rc = parse_header((struct payload_descriptor_header *)flash_addr, descriptor);
 
   // Loop through TLV sections. Handle those which are known to this parser,
   // while skipping any unknown sections.
   uint32_t region_idx = 0;
-  void *offset = flash_addr + desc_header->tlv.length;
-  while (offset < flash_addr + desc_header->descriptor_area_size) {
+  void *offset = flash_addr + descriptor->header.tlv.length;
+  while (offset < flash_addr + descriptor->header.descriptor_area_size) {
     struct tlv_header *tlv = (struct tlv_header*)offset;
-    int rc;
 
     switch (tlv->tag) {
       case PAYLOAD_REGION_INFO_TAG:

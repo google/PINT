@@ -8,6 +8,7 @@ int create_descriptor(const struct payload_region* regions, size_t region_count,
   out->header.tlv.tag = PAYLOAD_DESCRIPTOR_HEADER_TAG;
   out->header.tlv.length = sizeof(out->header);
   out->header.tlv.version = PAYLOAD_DESCRIPTOR_HEADER_VERSION;
+  out->header.magic = FMD_MAGIC;
   out->header.descriptor_offset = 0;
   out->header.descriptor_area_size = sizeof(out->header) +
                                      sizeof(out->region_info) +

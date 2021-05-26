@@ -25,6 +25,8 @@
 #define PAYLOAD_REGION_VERSION 1
 #define PAYLOAD_DESCRIPTOR_HEADER_VERSION 1
 
+#define FMD_MAGIC 0xAABBCCDD
+
 struct tlv_header {
   uint32_t tag;
   uint16_t length;
@@ -51,6 +53,8 @@ struct payload_region {
 
 struct payload_descriptor_header {
   struct tlv_header tlv;
+
+  uint32_t magic;
 
   /* The offset is relative to the start of the image data. */
   uint32_t descriptor_offset;
