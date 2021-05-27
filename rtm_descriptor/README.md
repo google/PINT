@@ -44,18 +44,16 @@ following sections will describe such a mechanism.
 
 ## Descriptor Format
 
-Given the structures defined in `inc/payload_descriptor.h`, a payload
-descriptor would be as follows:
+![FMD Format](img/fmd-format.png)
 
-```
----------------------------------- Layout ----------------------------------
-|                 struct payload_descriptor_header                         |
-----------------------------------------------------------------------------
-|                     struct payload_region_info                           |
-----------------------------------------------------------------------------
-|         struct payload_region[payload_region_info.region_count]          |
-----------------------------------------------------------------------------
-```
+The FMD structures are defined in `inc/payload_descriptor.h`. The full
+descriptor is just a series of concatenated TLV structures. The only
+ordering requirement is that the `payload_descriptor_header` is the first
+structure.
+
+All structures following the header must directly follow the preceding
+strucutre. For example, the first structure following the header must begin
+at offset `header.descriptor_offset + header.tlv.length`.
 
 ### TLV Structures
 
