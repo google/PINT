@@ -13,13 +13,13 @@ Root of Trust) during boot.
 
 ## Measured Boot
 
-In distributed systems, a common desire is to ensure a machine is in a
+In distributed systems, a common goal is to ensure a machine is in a
 verifiably good state before allowing it to handle potentially sensitive
-information. One way to solve this problem is through measured boot.
+data and/or workloads. One way to address this problem is through measured boot.
 
 During boot, each piece of code, from system firmware to OS components, will
 measure (take a hash of) the next component before transferring control. After
-boot is complete, these measurements can be used to prove to a Verifier that what
+boot is complete, these measurements can be used to prove to a Verifier what
 code was booted on the system.
 
 Take for example a standard UEFI Linux system which stores measurements in a
@@ -30,10 +30,10 @@ TPM:
 1. After boot, userspace software can query TPM to get a Quote of the boot
    measurements
 
-### Active RTM and Descriptor Motivation
+## Active RTM and Descriptor Motivation
 
 One limitation of the above is that the BIOS image is not measured and cannot be
-attested to. An possilbe alternative measured boot implementation could see the bios
+attested to. A possilbe alternative measured boot implementation could see the bios
 image measured from flash by a hardware Root of Trust which measures the image
 in flash before it is booted.
 
@@ -46,10 +46,10 @@ following sections will describe such a mechanism.
 
 ![FMD Format](img/fmd-format.png)
 
-The FMD structures are defined in `inc/payload_descriptor.h`. The full
-descriptor is just a series of concatenated TLV structures. The only
-ordering requirement is that the `payload_descriptor_header` is the first
-structure.
+The FMD structures are defined in
+[payload_descriptor.h](inc/fmd/payload_descriptor.h). The full descriptor is
+a concatenated series of these TLV structures. The only ordering requirement
+is that the `payload_descriptor_header` is the first structure.
 
 All structures following the header must directly follow the preceding
 strucutre. For example, the first structure following the header must begin
