@@ -17,9 +17,9 @@
 #ifndef __FMD_PARSE_H
 #define __FMD_PARSE_H
 
-#include "fmd/payload_descriptor.h"
+#include "fmd/fmd.h"
 #include "fmd/util.h"
 
-int parse_descriptor(void *flash_addr, struct image_descriptor *descriptor);
+int parse_descriptor(void *flash_addr, struct image_fmd *descriptor);
 
 #endif // __FMD_PARSE_H

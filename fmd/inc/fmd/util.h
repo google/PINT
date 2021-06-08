@@ -17,7 +17,7 @@
 #ifndef _UTIL_H
 #define _UTIL_H
 
-#include "payload_descriptor.h"
+#include "fmd.h"
 
 #define MAX_REGION_COUNT 0xFF
 
@@ -27,10 +27,10 @@
 #define FMD_ERROR_UNKNOWN_VERSION 0x2
 #define FMD_ERROR_UNKNOWN 0x2
 
-struct image_descriptor {
-  struct payload_descriptor_header header;
-  struct payload_region_info region_info;
-  struct payload_region regions[MAX_REGION_COUNT];
+struct image_fmd {
+  struct fmd_header header;
+  struct fmd_region_info region_info;
+  struct fmd_region regions[MAX_REGION_COUNT];
 };
 
 #endif // _UTIL_H

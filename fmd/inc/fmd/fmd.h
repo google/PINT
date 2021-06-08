@@ -14,32 +14,32 @@
  * limitations under the License.
  */
 
-#ifndef __PAYLOAD_DESCRIPTOR_H
-#define __PAYLOAD_DESCRIPTOR_H
+#ifndef __FMD_H
+#define __FMD_H
 
 #include <stddef.h>
 #include <stdint.h>
 
 /**
  *  ---------------------------------- Layout ----------------------------------
- *  |                 struct payload_descriptor_header                         |
+ *  |                             struct fmd_header                            |
  *  ----------------------------------------------------------------------------
- *  |                     struct payload_region_info                           |
+ *  |                         struct fmd_region_info                           |
  *  ----------------------------------------------------------------------------
- *  |         struct payload_region[payload_region_info.region_count]          |
+ *  |                 struct fmd_region[fmd_region_info.region_count]          |
  *  ----------------------------------------------------------------------------
  */
 
 #define FMD_HASH_SHA1 0
 #define FMD_HASH_SHA256 1
 
-#define PAYLOAD_DESCRIPTOR_HEADER_TAG 0
-#define PAYLOAD_REGION_INFO_TAG 1
-#define PAYLOAD_REGION_TAG 2
+#define FMD_HEADER_TAG 0
+#define FMD_REGION_INFO_TAG 1
+#define FMD_REGION_TAG 2
 
-#define PAYLOAD_REGION_INFO_VERSION 1
-#define PAYLOAD_REGION_VERSION 1
-#define PAYLOAD_DESCRIPTOR_HEADER_VERSION 1
+#define FMD_REGION_INFO_VERSION 1
+#define FMD_REGION_VERSION 1
+#define FMD_HEADER_VERSION 1
 
 #define FMD_MAGIC 0xAABBCCDD
 
@@ -49,7 +49,7 @@ struct tlv_header {
   uint8_t version; // version of the struct in which this header is embedded.
 };
 
-struct payload_region_info {
+struct fmd_region_info {
   struct tlv_header tlv;
 
   uint32_t region_count;
@@ -57,7 +57,7 @@ struct payload_region_info {
   uint32_t hash_type;
 };
 
-struct payload_region {
+struct fmd_region {
   struct tlv_header tlv;
 
   uint8_t region_name[32];  /* null-terminated ASCII string */
@@ -67,7 +67,7 @@ struct payload_region {
   uint32_t region_size;
 };
 
-struct payload_descriptor_header {
+struct fmd_header {
   struct tlv_header tlv;
 
   uint32_t magic;
@@ -82,4 +82,4 @@ struct payload_descriptor_header {
   uint32_t descriptor_area_size;
 };
 
-#endif // __PAYLOAD_DESCRIPTOR_H
+#endif // __FMD_H

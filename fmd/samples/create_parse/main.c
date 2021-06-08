@@ -17,7 +17,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <fmd/payload_descriptor.h>
+#include <fmd/fmd.h>
 #include <fmd/generate.h>
 #include <fmd/parse.h>
 #include <fmd/util.h>
@@ -27,12 +27,12 @@
 #define ARRAYSIZE(x) (sizeof(x) / sizeof(*x))
 
 static const struct tlv_header region_tlv_header = {
-  .tag = PAYLOAD_REGION_TAG,
-  .length = sizeof(struct payload_region),
-  .version = PAYLOAD_REGION_VERSION,
+  .tag = FMD_REGION_TAG,
+  .length = sizeof(struct fmd_region),
+  .version = FMD_REGION_VERSION,
 };
 
-static const struct payload_region global_regions[] = {
+static const struct fmd_region global_regions[] = {
   {
     .tlv = region_tlv_header,
     .region_name = "region1",
@@ -57,7 +57,7 @@ int main() {
   int rc;
 
   // Write a descriptor to a file
-  struct image_descriptor desc;
+  struct image_fmd desc;
   rc = create_descriptor(global_regions, ARRAYSIZE(global_regions), FMD_HASH_SHA256,
                          &desc);
   if (rc != FMD_SUCCESS) {
@@ -68,7 +68,7 @@ int main() {
   printf("Successfully generated an image descriptor!\n");
 
   // Read the descriptor back
-  struct image_descriptor out_desc;
+  struct image_fmd out_desc;
   rc = parse_descriptor(&desc, &out_desc);
   if (rc != FMD_SUCCESS) {
     printf("ERROR: Failed to parse image descriptor, error code=%d\n", rc);

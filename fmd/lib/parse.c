@@ -19,20 +19,20 @@
 
 #include <string.h>
 
-int parse_region_info(struct payload_region_info *region_info, struct image_descriptor *descriptor) {
-  if (region_info->tlv.version != PAYLOAD_REGION_INFO_VERSION) {
+int parse_region_info(struct fmd_region_info *region_info, struct image_fmd *descriptor) {
+  if (region_info->tlv.version != FMD_REGION_INFO_VERSION) {
     return FMD_ERROR_UNKNOWN_VERSION;
   }
 
-  memcpy(&descriptor->region_info, region_info, sizeof(struct payload_region_info));
+  memcpy(&descriptor->region_info, region_info, sizeof(struct fmd_region_info));
 
   return FMD_SUCCESS;
 }
 
-int parse_payload_region(struct payload_region *region, uint32_t region_idx,
-                         struct image_descriptor *descriptor) {
+int parse_payload_region(struct fmd_region *region, uint32_t region_idx,
+                         struct image_fmd *descriptor) {
 
-  if (region->tlv.version != PAYLOAD_REGION_VERSION) {
+  if (region->tlv.version != FMD_REGION_VERSION) {
     return FMD_ERROR_UNKNOWN_VERSION;
   }
 
@@ -40,28 +40,29 @@ int parse_payload_region(struct payload_region *region, uint32_t region_idx,
     return FMD_ERROR_INVALID_FORMAT;
   }
 
-  memcpy(&descriptor->regions[region_idx], region, sizeof(struct payload_region));
+  memcpy(&descriptor->regions[region_idx], region, sizeof(struct fmd_region));
 
   return FMD_SUCCESS;
 }
 
-int parse_header(struct payload_descriptor_header *header, struct image_descriptor *descriptor) {
-  if (header->tlv.version != PAYLOAD_DESCRIPTOR_HEADER_VERSION) {
+int parse_header(struct fmd_header *header, struct image_fmd *descriptor) {
+  if (header->tlv.version != FMD_HEADER_VERSION) {
     return FMD_ERROR_UNKNOWN_VERSION;
   }
 
   // Header is assumed to be the first TLV structure. Fail if this structure is
   // not the descriptor header.
-  if (header->tlv.tag != PAYLOAD_DESCRIPTOR_HEADER_TAG ||
-      header->magic != FMD_MAGIC) {
+  if (header->tlv.tag != FMD_HEADER_TAG || header->magic != FMD_MAGIC) {
     return FMD_ERROR_INVALID_FORMAT;
   }
 
-  memcpy(&descriptor->header, desc_header, sizeof(struct payload_descriptor_header));
+  memcpy(&descriptor->header, header, sizeof(struct fmd_header));
+
+  return FMD_SUCCESS;
 }
 
-int parse_descriptor(void *flash_addr, struct image_descriptor *descriptor) {
-  int rc = parse_header((struct payload_descriptor_header *)flash_addr, descriptor);
+int parse_descriptor(void *flash_addr, struct image_fmd *descriptor) {
+  int rc = parse_header((struct fmd_header *)flash_addr, descriptor);
 
   // Loop through TLV sections. Handle those which are known to this parser,
   // while skipping any unknown sections.
@@ -71,11 +72,11 @@ int parse_descriptor(void *flash_addr, struct image_descriptor *descriptor) {
     struct tlv_header *tlv = (struct tlv_header*)offset;
 
     switch (tlv->tag) {
-      case PAYLOAD_REGION_INFO_TAG:
-        rc = parse_region_info((struct payload_region_info *)offset, descriptor);
+      case FMD_REGION_INFO_TAG:
+        rc = parse_region_info((struct fmd_region_info *)offset, descriptor);
         break;
-      case PAYLOAD_REGION_TAG:
-        rc = parse_payload_region((struct payload_region *)offset, region_idx,
+      case FMD_REGION_TAG:
+        rc = parse_payload_region((struct fmd_region *)offset, region_idx,
                                   descriptor);
         region_idx++;
         break;
