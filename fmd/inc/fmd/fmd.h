@@ -30,34 +30,60 @@
  *  ----------------------------------------------------------------------------
  */
 
-#define FMD_HASH_SHA1 0
-#define FMD_HASH_SHA256 1
+typedef uint16_t fmd_hash;
+#define FMD_HASH_SHA1     (fmd_hash)0
+#define FMD_HASH_SHA256   (fmd_hash)1
 
-#define FMD_HEADER_TAG 0
-#define FMD_REGION_INFO_TAG 1
-#define FMD_REGION_TAG 2
+typedef uint16_t fmd_tlv_tag;
+#define FMD_HEADER_TAG        (fmd_tlv_tag)0
+#define FMD_REGION_INFO_TAG   (fmd_tlv_tag)1
+#define FMD_REGION_TAG        (fmd_tlv_tag)2
 
-#define FMD_REGION_INFO_VERSION 1
-#define FMD_REGION_VERSION 1
-#define FMD_HEADER_VERSION 1
+#define FMD_REGION_INFO_VERSION   (fmd_tlv_version)1
+#define FMD_REGION_VERSION        (fmd_tlv_version)1
+#define FMD_HEADER_VERSION        (fmd_tlv_version)1
+
+typedef uint32_t fmd_region_group_type;
+#define FMD_REGION_GROUP_MEASURE  (fmd_region_group_type)0
+#define FMD_REGION_GROUP_UPDATE   (fmd_region_group_type)1
+#define FMD_REGION_GROUP_VERIFY   (fmd_region_group_type)2
 
 #define FMD_MAGIC 0xAABBCCDD
 
 struct tlv_header {
-  uint32_t tag;
+  /* Tag for the TLV section described by this tlv_header */
+  fmd_tlv_tag tag;
+
+  /* Length of the TLV section described by this tlv_header, including this
+   * tlv_header */
   uint16_t length;
-  uint8_t version; // version of the struct in which this header is embedded.
+
+  /* version of the struct in which this header is embedded. */
+  fmd_tlv_version version;
+
+  /* If this field is non-zero, this TLV section is covered by the descriptor
+   * signature */
+  uint8_t verify;
 };
 
+
 struct fmd_region_info {
+  /* TLV header for this TLV section */
   struct tlv_header tlv;
 
+  /* Number of regions following this info structure */
   uint32_t region_count;
 
+  /* Type of region group this structure defines. */
+  fmd_region_group_type group_type;
+
+  /* Hash algorithm to use for hashing the `fmd_region`s following this
+   * stucture */
   uint32_t hash_type;
 };
 
 struct fmd_region {
+  /* TLV header for this TLV section */
   struct tlv_header tlv;
 
   uint8_t region_name[32];  /* null-terminated ASCII string */
@@ -68,8 +94,10 @@ struct fmd_region {
 };
 
 struct fmd_header {
+  /* TLV header for this TLV section */
   struct tlv_header tlv;
 
+  /* Magic number denoting this is an FMD. Must be FMD_MAGIC */
   uint32_t magic;
 
   /* The offset is relative to the start of the image data. */
