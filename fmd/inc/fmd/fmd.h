@@ -31,19 +31,24 @@
  *  ----------------------------------------------------------------------------
  */
 
-typedef uint16_t fmd_hash;
-#define FMD_HASH_SHA1     (fmd_hash)0
-#define FMD_HASH_SHA256   (fmd_hash)1
+typedef uint16_t fmd_hash_type;
+#define FMD_HASH_SHA1     (fmd_hash_type)0
+#define FMD_HASH_SHA256   (fmd_hash_type)1
+#define FMD_HASH_SHA512   (fmd_hash_type)2
 
 typedef uint16_t fmd_tlv_tag;
-#define FMD_HEADER_TAG        (fmd_tlv_tag)0
-#define FMD_REGION_INFO_TAG   (fmd_tlv_tag)1
-#define FMD_REGION_TAG        (fmd_tlv_tag)2
+#define FMD_HEADER_TAG            (fmd_tlv_tag)0
+#define FMD_REGION_INFO_TAG       (fmd_tlv_tag)1
+#define FMD_REGION_TAG            (fmd_tlv_tag)2
+#define FMD_RSA_SIGNATURE_TAG     (fmd_tlv_tag)3
+#define FMD_ECDSA_SIGNATURE_TAG   (fmd_tlv_tag)4
 
 typedef uint16_t fmd_tlv_version;
-#define FMD_REGION_INFO_VERSION   (fmd_tlv_version)1
-#define FMD_REGION_VERSION        (fmd_tlv_version)1
-#define FMD_HEADER_VERSION        (fmd_tlv_version)1
+#define FMD_REGION_INFO_VERSION     (fmd_tlv_version)1
+#define FMD_REGION_VERSION          (fmd_tlv_version)1
+#define FMD_HEADER_VERSION          (fmd_tlv_version)1
+#define FMD_RSA_SIGNATURE_VERSION   (fmd_tlv_version)1
+#define FMD_ECDSA_SIGNATURE_VERSION (fmd_tlv_version)1
 
 typedef uint16_t fmd_region_group_type;
 #define FMD_REGION_GROUP_MEASURE  (fmd_region_group_type)0
@@ -54,8 +59,9 @@ typedef uint16_t fmd_ecc_curve;
 #define FMD_ECC_CURVE_P256 (fmd_ecc_curve)0
 
 #define FMD_MAGIC 0xAABBCCDD
-#define FMD_RSA_MAX_KEY_BYTES 512
-#define FMD_ECC_MAX_KEY_BYTES 32
+#define FMD_RSA_MAX_KEY_BYTES 512 // Supports up to RSA4096
+#define FMD_ECC_MAX_KEY_BYTES 32 // Supports ECC keys up to 256 bits
+#define FMD_MAX_HASH_BYTES 64 // Supports up to SHA512
 
 /**
  * The header structure of every TLV. To simplify parsing, every FMD section
@@ -82,7 +88,11 @@ _Static_assert(sizeof(struct tlv_header) == 8);
 
 /**
  * Metadata for a group of regions. `region_count` regions must immedieately
- * follow this structure.
+ * follow this structure. If the hash of this region group should be enforced
+ * by a root of trust, a corresponding `fmd_hash` structure can be included
+ * in this FMD with the same `group_type`.
+ *
+ * Only one `fmd_region_info` for each `group_type` may be present in an FMD.
  */
 struct fmd_region_info {
   /* TLV header for this TLV section */
@@ -91,14 +101,16 @@ struct fmd_region_info {
   /* Number of regions following this info structure */
   uint16_t region_count;
 
-  /* Type of region group this structure defines. */
+  /* Type of region group this structure defines. Only one of each group_type
+   * may be present in an FMD
+   */
   fmd_region_group_type group_type;
 
   /* Hash algorithm to use for hashing the `fmd_region`s following this
    * stucture */
-  uint32_t hash_type;
+  fmd_hash_type hash_type;
 };
-_Static_assert(sizeof(struct fmd_region_info) == 16);
+_Static_assert(sizeof(struct fmd_region_info) == 14);
 
 /**
  * A region of firmware described by this FMD.
@@ -136,6 +148,74 @@ struct fmd_header {
   uint32_t descriptor_area_size;
 };
 _Static_assert(sizeof(struct fmd_header) == 20);
+
+/**
+ * Metadata about the payload described by this FMD.
+ */
+struct fmd_payload_info {
+  /* TLV header for this TLV section */
+  struct tlv_header tlv;
+
+  /* Image secure version number. This should be incremented when a
+   * security-relevant change is make to the image.
+   */
+  uint32_t image_svn;
+
+  /* 16-byte version field. It is up to the payload writer if the image_version
+   * bytes hold any significance. This is included primarily for diagnostic
+   * reasons and is not intended to be consumed by roots of trust.
+   */
+  uint32_t image_version[4];
+
+  /* Null-terminated ASCII string containing human readable name of this
+   * image. This is included primarily for diagnostic reasons and is not
+   * intended to be consumed by roots of trust.
+   */
+  uint8_t image_name[32];
+};
+_Static_assert(sizeof(struct fmd_payload_info) == 60);
+
+/**
+ * Structure used for updating the Minimum Acceptable Update Version enforced
+ * by an RTU.
+ */
+struct fmd_payload_mauv {
+  /* TLV header for this TLV section */
+  struct tlv_header tlv;
+
+  /* Minimum acceptable svn which an RTU should accept during an update. This
+   * value can be provided to update the internal minimum SVN held by an RTU.
+   * It should only increase monotonically; that is, if the RTU has already
+   * seen a larger SVN, it should *NOT* lower the minimum SVN to the value in this
+   * TLV
+   */
+  uint32_t minumum_svn;
+};
+_Static_assert(sizeof(struct fmd_payload_mauv) == 12);
+
+/**
+ * The expected hash of a group of regions.
+ *
+ * TODO: Add comment explaining how a group of regions should be hashed (what
+ * should be hashed).
+ *
+ * Only one `fmd_hash` for each `group_type` may be present in an FMD.
+ */
+struct fmd_hash {
+  /* TLV header for this TLV section */
+  struct tlv_header tlv;
+
+  /* The region group this hash covers. */
+  fmd_region_group_type group_type;
+
+  /* The type of hash corresponding to this structure. */
+  fmd_hash_type hash_type;
+
+  /* The expected hash value over a group of regions. */
+  uint8_t hash_bytes[FMD_MAX_HASH_BYTES];
+};
+_Static_assert(sizeof(struct fmd_hash) == 76);
+
 
 /**
  * An RSA signature over all the structures in a given FMD with
