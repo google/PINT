@@ -4,7 +4,7 @@ PROJECT_ROOT = ../..
 
 LIBFMD = $(PROJECT_ROOT)/lib/libfmd.a
 SAMPLE = create_parse
-CFLAGS = -I$(PROJECT_ROOT)/inc -Wall -Werror
+CFLAGS = -I$(PROJECT_ROOT)/inc -Wall -Werror -MD
 
 OBJECTS = main.o
 
@@ -20,4 +20,6 @@ $(SAMPLE): $(OBJECTS) $(LIBFMD)
 	$(CC) -o $@ $^
 
 clean:
-	rm -f *.o $(SAMPLE)
+	rm -f *.o *.d $(SAMPLE)
+
+-include $(OBJECTS:.o=.d)

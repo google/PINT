@@ -17,6 +17,7 @@
 #ifndef __FMD_H
 #define __FMD_H
 
+#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -39,17 +40,27 @@ typedef uint16_t fmd_tlv_tag;
 #define FMD_REGION_INFO_TAG   (fmd_tlv_tag)1
 #define FMD_REGION_TAG        (fmd_tlv_tag)2
 
+typedef uint16_t fmd_tlv_version;
 #define FMD_REGION_INFO_VERSION   (fmd_tlv_version)1
 #define FMD_REGION_VERSION        (fmd_tlv_version)1
 #define FMD_HEADER_VERSION        (fmd_tlv_version)1
 
-typedef uint32_t fmd_region_group_type;
+typedef uint16_t fmd_region_group_type;
 #define FMD_REGION_GROUP_MEASURE  (fmd_region_group_type)0
 #define FMD_REGION_GROUP_UPDATE   (fmd_region_group_type)1
 #define FMD_REGION_GROUP_VERIFY   (fmd_region_group_type)2
 
-#define FMD_MAGIC 0xAABBCCDD
+typedef uint16_t fmd_ecc_curve;
+#define FMD_ECC_CURVE_P256 (fmd_ecc_curve)0
 
+#define FMD_MAGIC 0xAABBCCDD
+#define FMD_RSA_MAX_KEY_BYTES 512
+#define FMD_ECC_MAX_KEY_BYTES 32
+
+/**
+ * The header structure of every TLV. To simplify parsing, every FMD section
+ * must start with this structure at offset 0
+ */
 struct tlv_header {
   /* Tag for the TLV section described by this tlv_header */
   fmd_tlv_tag tag;
@@ -64,15 +75,21 @@ struct tlv_header {
   /* If this field is non-zero, this TLV section is covered by the descriptor
    * signature */
   uint8_t verify;
+
+  uint8_t reserved_0;
 };
+_Static_assert(sizeof(struct tlv_header) == 8);
 
-
+/**
+ * Metadata for a group of regions. `region_count` regions must immedieately
+ * follow this structure.
+ */
 struct fmd_region_info {
   /* TLV header for this TLV section */
   struct tlv_header tlv;
 
   /* Number of regions following this info structure */
-  uint32_t region_count;
+  uint16_t region_count;
 
   /* Type of region group this structure defines. */
   fmd_region_group_type group_type;
@@ -81,7 +98,11 @@ struct fmd_region_info {
    * stucture */
   uint32_t hash_type;
 };
+_Static_assert(sizeof(struct fmd_region_info) == 16);
 
+/**
+ * A region of firmware described by this FMD.
+ */
 struct fmd_region {
   /* TLV header for this TLV section */
   struct tlv_header tlv;
@@ -92,7 +113,12 @@ struct fmd_region {
 
   uint32_t region_size;
 };
+_Static_assert(sizeof(struct fmd_region) == 48);
 
+/**
+ * Metadata about this FMD. This strcuture must be the first structure in the
+ * FMD at offset 0.
+ */
 struct fmd_header {
   /* TLV header for this TLV section */
   struct tlv_header tlv;
@@ -109,5 +135,44 @@ struct fmd_header {
    */
   uint32_t descriptor_area_size;
 };
+_Static_assert(sizeof(struct fmd_header) == 20);
+
+/**
+ * An RSA signature over all the structures in a given FMD with
+ * tlv.verified != 0. This structure must set tlv.verified equal to 0.
+ */
+struct fmd_rsa_signature {
+  /* TLV header for this TLV section */
+  struct tlv_header tlv;
+
+  /* Length of the RSA public key modulus used to verify this signature. */
+  uint16_t key_len;
+
+  /* Type of padding used when computing this RSA signature. */
+  uint16_t padding_type;
+
+  /* An RSA signature over this FMD, with length key_len. */
+  uint8_t signature[FMD_RSA_MAX_KEY_BYTES];
+};
+_Static_assert(sizeof(struct fmd_rsa_signature) == 524);
+
+/**
+ * An ECDSA signature over all the structures in a given FMD with
+ * tlv.verified != 0; This structure must set tlv.verified equal to 0.
+ */
+struct fmd_ecdsa_signature {
+  /* TLV header for this TLV section */
+  struct tlv_header tlv;
+
+  /* The ECC curve used to compute this signature. */
+  fmd_ecc_curve curve;
+
+  /* The r component of this ECDSA signature. */
+  uint8_t signature_r[FMD_ECC_MAX_KEY_BYTES];
+
+  /* The s component of this ECDSA signature. */
+  uint8_t signature_s[FMD_ECC_MAX_KEY_BYTES];
+};
+_Static_assert(sizeof(struct fmd_ecdsa_signature) == 74);
 
 #endif // __FMD_H
