@@ -21,16 +21,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/**
- *  ---------------------------------- Layout ----------------------------------
- *  |                             struct fmd_header                            |
- *  ----------------------------------------------------------------------------
- *  |                         struct fmd_region_info                           |
- *  ----------------------------------------------------------------------------
- *  |                 struct fmd_region[fmd_region_info.region_count]          |
- *  ----------------------------------------------------------------------------
- */
-
 typedef uint16_t fmd_hash_type;
 #define FMD_HASH_SHA1     (fmd_hash_type)0
 #define FMD_HASH_SHA256   (fmd_hash_type)1
