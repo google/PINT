@@ -40,13 +40,19 @@ typedef uint16_t fmd_tlv_tag;
 #define FMD_HEADER_TAG            (fmd_tlv_tag)0
 #define FMD_REGION_INFO_TAG       (fmd_tlv_tag)1
 #define FMD_REGION_TAG            (fmd_tlv_tag)2
-#define FMD_RSA_SIGNATURE_TAG     (fmd_tlv_tag)3
-#define FMD_ECDSA_SIGNATURE_TAG   (fmd_tlv_tag)4
+#define FMD_PAYLOAD_INFO_TAG      (fmd_tlv_tag)3
+#define FMD_PAYLOAD_MAUV_TAG      (fmd_tlv_tag)4
+#define FMD_HASH_TAG              (fmd_tlv_tag)5
+#define FMD_RSA_SIGNATURE_TAG     (fmd_tlv_tag)6
+#define FMD_ECDSA_SIGNATURE_TAG   (fmd_tlv_tag)7
 
 typedef uint16_t fmd_tlv_version;
+#define FMD_HEADER_VERSION          (fmd_tlv_version)1
 #define FMD_REGION_INFO_VERSION     (fmd_tlv_version)1
 #define FMD_REGION_VERSION          (fmd_tlv_version)1
-#define FMD_HEADER_VERSION          (fmd_tlv_version)1
+#define FMD_PAYLOAD_INFO_VERSION    (fmd_tlv_version)1
+#define FMD_PAYLOAD_MAUV_VERSION    (fmd_tlv_version)1
+#define FMD_HASH_VERSION            (fmd_tlv_version)1
 #define FMD_RSA_SIGNATURE_VERSION   (fmd_tlv_version)1
 #define FMD_ECDSA_SIGNATURE_VERSION (fmd_tlv_version)1
 
@@ -54,6 +60,10 @@ typedef uint16_t fmd_region_group_type;
 #define FMD_REGION_GROUP_MEASURE  (fmd_region_group_type)0
 #define FMD_REGION_GROUP_UPDATE   (fmd_region_group_type)1
 #define FMD_REGION_GROUP_VERIFY   (fmd_region_group_type)2
+
+typedef uint16_t fmd_region_type;
+#define FMD_REGION_TYPE_MIGRATE   (fmd_region_type)0
+#define FMD_REGION_TYPE_STATIC    (fmd_region_type)1
 
 typedef uint16_t fmd_ecc_curve;
 #define FMD_ECC_CURVE_P256 (fmd_ecc_curve)0
@@ -119,13 +129,24 @@ struct fmd_region {
   /* TLV header for this TLV section */
   struct tlv_header tlv;
 
-  uint8_t region_name[32];  /* null-terminated ASCII string */
+  /* Type of region this structure describes. Note that when hashing regions,
+   * regions with type FMD_REGION_TYPE_MIGRATE will not be hashed.
+   */
+  fmd_region_type region_type;
 
+  /* Unused field for alignment */
+  uint16_t _reserved0;
+
+  /* null-terminated ASCII string. Included for diagnostic reasons. */
+  uint8_t region_name[32];
+
+  /* Offset in image where this region resides. */
   uint32_t region_offset;
 
+  /* Size, in bytes, of this region */
   uint32_t region_size;
 };
-_Static_assert(sizeof(struct fmd_region) == 48);
+_Static_assert(sizeof(struct fmd_region) == 52);
 
 /**
  * Metadata about this FMD. This strcuture must be the first structure in the
