@@ -22,29 +22,30 @@
 #include <stdint.h>
 
 typedef uint16_t fmd_hash_type;
-#define FMD_HASH_SHA1     (fmd_hash_type)0
-#define FMD_HASH_SHA256   (fmd_hash_type)1
-#define FMD_HASH_SHA512   (fmd_hash_type)2
+#define FMD_HASH_NULL     (fmd_hash_type)0
+#define FMD_HASH_SHA1     (fmd_hash_type)1
+#define FMD_HASH_SHA256   (fmd_hash_type)2
+#define FMD_HASH_SHA384   (fmd_hash_type)3
+#define FMD_HASH_SHA512   (fmd_hash_type)4
+#define FMD_HASH_SM3_256  (fmd_hash_type)5
+
+typedef uint16_t fmd_signature_alg;
+#define FMD_SIGNATURE_RSA   (fmd_signature_alg)0
+#define FMD_SIGNATURE_ECDSA (fmd_signature_alg)1
 
 typedef uint16_t fmd_tlv_tag;
 #define FMD_HEADER_TAG            (fmd_tlv_tag)0
 #define FMD_REGION_INFO_TAG       (fmd_tlv_tag)1
 #define FMD_REGION_TAG            (fmd_tlv_tag)2
 #define FMD_PAYLOAD_INFO_TAG      (fmd_tlv_tag)3
-#define FMD_PAYLOAD_MAUV_TAG      (fmd_tlv_tag)4
-#define FMD_HASH_TAG              (fmd_tlv_tag)5
-#define FMD_RSA_SIGNATURE_TAG     (fmd_tlv_tag)6
-#define FMD_ECDSA_SIGNATURE_TAG   (fmd_tlv_tag)7
+#define FMD_SIGNATURE_TAG         (fmd_tlv_tag)4
 
 typedef uint16_t fmd_tlv_version;
 #define FMD_HEADER_VERSION          (fmd_tlv_version)1
 #define FMD_REGION_INFO_VERSION     (fmd_tlv_version)1
 #define FMD_REGION_VERSION          (fmd_tlv_version)1
 #define FMD_PAYLOAD_INFO_VERSION    (fmd_tlv_version)1
-#define FMD_PAYLOAD_MAUV_VERSION    (fmd_tlv_version)1
-#define FMD_HASH_VERSION            (fmd_tlv_version)1
-#define FMD_RSA_SIGNATURE_VERSION   (fmd_tlv_version)1
-#define FMD_ECDSA_SIGNATURE_VERSION (fmd_tlv_version)1
+#define FMD_SIGNATURE_VERSION       (fmd_tlv_version)1
 
 typedef uint16_t fmd_region_group_type;
 #define FMD_REGION_GROUP_MEASURE  (fmd_region_group_type)0
@@ -61,7 +62,36 @@ typedef uint16_t fmd_ecc_curve;
 #define FMD_MAGIC 0xAABBCCDD
 #define FMD_RSA_MAX_KEY_BYTES 512 // Supports up to RSA4096
 #define FMD_ECC_MAX_KEY_BYTES 32 // Supports ECC keys up to 256 bits
-#define FMD_MAX_HASH_BYTES 64 // Supports up to SHA512
+
+#define FMD_SHA1_DIGEST_SIZE 20
+#define FMD_SHA256_DIGEST_SIZE 32
+#define FMD_SHA384_DIGEST_SIZE 48
+#define FMD_SHA512_DIGEST_SIZE 64
+#define FMD_SM3_256_DIGEST_SIZE 32
+
+// =====================
+// FMD helper unions
+// =====================
+union fmdu_hash_bytes {
+    uint8_t sha1[FMD_SHA1_DIGEST_SIZE];
+    uint8_t sha256[FMD_SHA256_DIGEST_SIZE];
+    uint8_t sha384[FMD_SHA384_DIGEST_SIZE];
+    uint8_t sha512[FMD_SHA512_DIGEST_SIZE];
+    uint8_t sm3_256[FMD_SM3_256_DIGEST_SIZE];
+};
+
+// Signature forward declarations
+struct fmd_rsa_signature;
+struct fmd_ecdsa_signature;
+
+union fmdu_signature {
+    struct fmd_rsa_signature rsa;
+    struct fmd_ecdsa_signature ecdsa;
+};
+
+// =====================
+// FMD helper structures
+// =====================
 
 /**
  * The header structure of every TLV. To simplify parsing, every FMD section
@@ -78,28 +108,67 @@ struct tlv_header {
   /* version of the struct in which this header is embedded. */
   fmd_tlv_version version;
 
-  /* If this field is non-zero, this TLV section is covered by the descriptor
-   * signature */
-  uint8_t verify;
-
-  uint8_t reserved_0;
+  uint16_t reserved_0;
 };
 _Static_assert(sizeof(struct tlv_header) == 8);
 
+struct fmd_rsa_signature {
+  /* Length of the RSA public key modulus used to verify this signature. */
+  uint16_t key_len;
+
+  /* Type of padding used when computing this RSA signature. */
+  uint16_t padding_type;
+
+  uint8_t pubkey[FMD_RSA_MAX_KEY_BYTES];
+
+  /* An RSA signature over this FMD, with length key_len. */
+  uint8_t signature[FMD_RSA_MAX_KEY_BYTES];
+};
+_Static_assert(sizeof(struct fmd_rsa_signature) == 1028);
+
+struct fmd_ecdsa_signature {
+  /* The ECC curve used to compute this signature. */
+  fmd_ecc_curve curve;
+
+  uint16_t reserved_0;
+
+  uint8_t pubkey_x[FMD_ECC_MAX_KEY_BYTES];
+
+  uint8_t pubkey_y[FMD_ECC_MAX_KEY_BYTES];
+
+  /* The r component of this ECDSA signature. */
+  uint8_t signature_r[FMD_ECC_MAX_KEY_BYTES];
+
+  /* The s component of this ECDSA signature. */
+  uint8_t signature_s[FMD_ECC_MAX_KEY_BYTES];
+};
+_Static_assert(sizeof(struct fmd_ecdsa_signature) == 132);
+
+struct fmd_hash {
+  fmd_hash_type hash_type;
+
+  uint16_t reserved_0;
+
+  union fmdu_hash_bytes bytes;
+};
+_Static_assert(sizeof(struct fmd_hash) == 68);
+
+// =====================
+// FMD TLV sections
+// =====================
+
 /**
  * Metadata for a group of regions. `region_count` regions must immedieately
- * follow this structure. If the hash of this region group should be enforced
- * by a root of trust, a corresponding `fmd_hash` structure can be included
- * in this FMD with the same `group_type`.
+ * follow this structure.
  *
  * Only one `fmd_region_info` for each `group_type` may be present in an FMD.
  */
-struct fmd_region_info {
+struct fmd_region_group {
   /* TLV header for this TLV section */
   struct tlv_header tlv;
 
   /* Number of regions following this info structure */
-  uint16_t region_count;
+  uint32_t region_count;
 
   /* Type of region group this structure defines. Only one of each group_type
    * may be present in an FMD
@@ -109,8 +178,14 @@ struct fmd_region_info {
   /* Hash algorithm to use for hashing the `fmd_region`s following this
    * stucture */
   fmd_hash_type hash_type;
+
+  /* The expected result of hashing all the regions in this region group
+   * using the algorithm `hash_type`. `expected_hash.hash_type` must be
+   * the same as the above `hash_type` field or FMD_HASH_NULL.
+   */
+  struct fmd_hash expected_hash;
 };
-_Static_assert(sizeof(struct fmd_region_info) == 14);
+_Static_assert(sizeof(struct fmd_region_info) == 20);
 
 /**
  * A region of firmware described by this FMD.
@@ -172,6 +247,11 @@ struct fmd_payload_info {
    */
   uint32_t image_svn;
 
+  /* Minimum SVN allowed for future updates. Once this update has been applied,
+   * all future updates must have an image_svn <= this field.
+   */
+  uint32_t minimum_svn;
+
   /* 16-byte version field. It is up to the payload writer if the image_version
    * bytes hold any significance. This is included primarily for diagnostic
    * reasons and is not intended to be consumed by roots of trust.
@@ -187,83 +267,19 @@ struct fmd_payload_info {
 _Static_assert(sizeof(struct fmd_payload_info) == 60);
 
 /**
- * Structure used for updating the Minimum Acceptable Update Version enforced
- * by an RTU.
- */
-struct fmd_payload_mauv {
-  /* TLV header for this TLV section */
-  struct tlv_header tlv;
-
-  /* Minimum acceptable svn which an RTU should accept during an update. This
-   * value can be provided to update the internal minimum SVN held by an RTU.
-   * It should only increase monotonically; that is, if the RTU has already
-   * seen a larger SVN, it should *NOT* lower the minimum SVN to the value in this
-   * TLV
-   */
-  uint32_t minumum_svn;
-};
-_Static_assert(sizeof(struct fmd_payload_mauv) == 12);
-
-/**
- * The expected hash of a group of regions.
- *
- * TODO: Add comment explaining how a group of regions should be hashed (what
- * should be hashed).
- *
- * Only one `fmd_hash` for each `group_type` may be present in an FMD.
- */
-struct fmd_hash {
-  /* TLV header for this TLV section */
-  struct tlv_header tlv;
-
-  /* The region group this hash covers. */
-  fmd_region_group_type group_type;
-
-  /* The type of hash corresponding to this structure. */
-  fmd_hash_type hash_type;
-
-  /* The expected hash value over a group of regions. */
-  uint8_t hash_bytes[FMD_MAX_HASH_BYTES];
-};
-_Static_assert(sizeof(struct fmd_hash) == 76);
-
-
-/**
  * An RSA signature over all the structures in a given FMD with
  * tlv.verified != 0. This structure must set tlv.verified equal to 0.
  */
-struct fmd_rsa_signature {
+struct fmd_signature {
   /* TLV header for this TLV section */
   struct tlv_header tlv;
 
-  /* Length of the RSA public key modulus used to verify this signature. */
-  uint16_t key_len;
+  fmd_signature_alg algorithm;
 
-  /* Type of padding used when computing this RSA signature. */
-  uint16_t padding_type;
+  uint16_t reserved_0;
 
-  /* An RSA signature over this FMD, with length key_len. */
-  uint8_t signature[FMD_RSA_MAX_KEY_BYTES];
+  union fmdu_signature signature;
 };
-_Static_assert(sizeof(struct fmd_rsa_signature) == 524);
-
-/**
- * An ECDSA signature over all the structures in a given FMD with
- * tlv.verified != 0; This structure must set tlv.verified equal to 0.
- */
-struct fmd_ecdsa_signature {
-  /* TLV header for this TLV section */
-  struct tlv_header tlv;
-
-  /* The ECC curve used to compute this signature. */
-  fmd_ecc_curve curve;
-
-  /* The r component of this ECDSA signature. */
-  uint8_t signature_r[FMD_ECC_MAX_KEY_BYTES];
-
-  /* The s component of this ECDSA signature. */
-  uint8_t signature_s[FMD_ECC_MAX_KEY_BYTES];
-};
-_Static_assert(sizeof(struct fmd_ecdsa_signature) == 74);
+_Static_assert(sizeof(struct fmd_rsa_signature) == 530);
 
 #endif // __FMD_H
