@@ -17,4 +17,4 @@ PINT currently defines the following primitives for securing system software:
 | --------------------------------------- | ----------- |
 | [Firmware Measurement Descriptor](fmd/) | A binary header which describes how an Root of Trust should measure a firmware image |
 | [Redfish](redfish/)                     | Draft proposals for the Redfish specification in DMTF |
-
+| [Open Mailbox Communications](omc/)     | An exploration for point-to-point communications using open protocols |
