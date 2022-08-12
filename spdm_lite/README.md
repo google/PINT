@@ -16,9 +16,6 @@ $ sudo apt install libmbedtls-dev cmake
 
 ### Build and run tests
 
-*Note: test code will likely build on Windows with some effort but has not yet
-been tested*
-
 ```
 $ cmake -B build
 $ cmake --build build
@@ -55,6 +52,13 @@ In addition, Responders are expected to provide a callback function of type
 vendor-defined command sent within an established secure session.
 
 This implementation currently only supports one active session at a time.
+
+### Mutual authentication
+
+This implementation requires mutual authentication. Certificate exchange is out
+of scope. As SPDM 1.2 currently does not support a mechanism for exchanging raw
+public keys, this implementation provides a custom vendor-defined command for
+this purpose. See `common/vendor_defined_pub_key.h` for the message structure.
 
 ### Crypto
 

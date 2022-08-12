@@ -19,6 +19,9 @@
 // keys, rather than full certificates. This command must only be sent after the
 // VCA handshake.
 //
+// Note: this vendor-defined command has not been endorsed by DMTF or any other
+// standards body.
+//
 // The request message has the following field values:
 //
 // * StandardID = 0 (DMTF)
