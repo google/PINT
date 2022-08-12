@@ -1,0 +1,1119 @@
+// Copyright 2022 Google LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// This file contains parser definitions for the following SPDM messages:
+//
+// * GET_VERSION / VERSION
+// * GET_CAPABILITIES / CAPABILITIES
+// * NEGOTIATE_ALGORITHMS / ALGORITHMS
+// * KEY_EXCHANGE / KEY_EXCHANGE_RSP
+// * GET_ENCAPSULATED_REQUEST / ENCAPSULATED_REQUEST
+// * DELIVER_ENCAPSULATED_RESPONSE / ENCAPSULATED_RESPONSE_ACK
+// * FINISH / FINISH_RSP
+// * VENDOR_DEFINED_REQUEST / VENDOR_DEFINED_RESPONSE
+// * ERROR
+//
+// In addition, messages are defined that support SPDM Secured Messages,
+// including opaque data and secured records.
+//
+// The definitions follow SPDM 1.2, as defined at
+// https://www.dmtf.org/sites/default/files/standards/documents/DSP0274_1.2.0.pdf,
+// and SPDM Secured Messages 1.1, as defined at
+// https://www.dmtf.org/sites/default/files/standards/documents/DSP0277_1.1.0.pdf
+//
+// Follow instructions at https://project-everest.github.io/everparse/3d.html to
+// build. See `build.sh` for a build script.
+
+// Request codes
+#define GET_VERSION 0x84
+#define GET_CAPABILITIES 0xE1
+#define NEGOTIATE_ALGORITHMS 0xE3
+#define GET_MEASUREMENTS 0xE0
+#define KEY_EXCHANGE 0xE4
+#define GET_ENCAPSULATED_REQUEST 0xEA
+#define DELIVER_ENCAPSULATED_RESPONSE 0xEB
+#define END_SESSION 0xEC
+#define FINISH 0xE5
+#define VENDOR_DEFINED_REQUEST 0xFE
+
+// Response codes
+#define VERSION 0x04
+#define CAPABILITIES 0x61
+#define ALGORITHMS 0x63
+#define MEASUREMENTS 0x60
+#define KEY_EXCHANGE_RSP 0x64
+#define ENCAPSULATED_REQUEST 0x6A
+#define ENCAPSULATED_RESPONSE_ACK 0x6B
+#define END_SESSION_ACK 0x6C
+#define FINISH_RSP 0x65
+#define VENDOR_DEFINED_RESPONSE 0x7E
+#define ERROR 0x7F
+
+casetype _OptionalBuffer (Bool present, UINT32 size) {
+  switch(present) {
+    case true: UINT8 buffer[size];
+    case false: unit noop;
+  }
+} OptionalBuffer;
+
+
+// Every SPDM message begins with this.
+
+typedef struct _Preamble(UINT8 code) {
+  UINT8 version;
+  UINT8 request_response_code { request_response_code == code }
+} Preamble;
+
+// Many SPDM messages use reserved param1/param2.
+
+typedef struct _ReservedParams {
+  UINT8 param_1_reserved;
+  UINT8 param_2_reserved;
+} ReservedParams;
+
+
+// GET_VERSION / VERSION
+
+// Table 8
+entrypoint typedef struct _GetVersion {
+  Preamble(GET_VERSION) preamble;
+  ReservedParams params;
+} GetVersion;
+
+// Table 10
+typedef struct _VersionNumberEntry {
+  UINT16 alpha : 4;
+  UINT16 update_version : 4;
+  UINT16 minor_version : 4;
+  UINT16 major_version : 4;
+} VersionNumberEntry;
+
+#define MAX_VERSION_NUMBER_ENTRY_COUNT 16
+
+// Table 9
+entrypoint typedef struct _Version(
+    mutable UINT8* out_entry_count,
+    mutable PUINT8* out_entries) {
+  Preamble(VERSION) preamble;
+  ReservedParams params;
+  UINT8 reserved;
+  UINT8 version_number_entry_count { version_number_entry_count <= MAX_VERSION_NUMBER_ENTRY_COUNT };
+  VersionNumberEntry version_number_entries[:byte-size version_number_entry_count * 2]
+  {:on-success
+    var ptr = field_ptr;
+    *out_entry_count = version_number_entry_count;
+    *out_entries = ptr;
+    return true;
+  };
+} Version;
+
+
+// GET_CAPABILITIES / CAPABILITIES
+
+// Table 11
+entrypoint typedef struct _GetCapabilities {
+  Preamble(GET_CAPABILITIES) preamble;
+  ReservedParams params;
+  UINT8 reserved_0;
+  UINT8 ct_exponent;
+  UINT16 reserved_1;
+  UINT32 flags_reserved_0 : 1;
+  UINT32 flags_CERT_CAP : 1;
+  UINT32 flags_CHAL_CAP : 1;
+  UINT32 flags_reserved_1 : 3;
+  UINT32 flags_ENCRYPT_CAP : 1;
+  UINT32 flags_MAC_CAP : 1;
+  UINT32 flags_MUT_AUTH_CAP : 1;
+  UINT32 flags_KEY_EX_CAP : 1 { flags_KEY_EX_CAP == 0 ||
+                              (flags_ENCRYPT_CAP == 1 || flags_MAC_CAP == 1) };
+  UINT32 flags_PSK_CAP : 2 { flags_PSK_CAP == 0x00 || flags_PSK_CAP == 0x01 };
+  UINT32 flags_ENCAP_CAP : 1;
+  UINT32 flags_HBEAT_CAP : 1;
+  UINT32 flags_KEY_UPD_CAP : 1;
+  UINT32 flags_HANDSHAKE_IN_THE_CLEAR_CAP : 1;
+  UINT32 flags_PUB_KEY_ID_CAP : 1;
+  UINT32 flags_CHUNK_CAP : 1;
+  UINT32 flags_reserved_2 : 14;
+  UINT32 data_transfer_size;
+  UINT32 max_spdm_message_size { max_spdm_message_size >= data_transfer_size };
+} GetCapabilities;
+
+// Table 12
+entrypoint typedef struct _Capabilities {
+  Preamble(CAPABILITIES) preamble;
+  ReservedParams params;
+  UINT8 reserved_0;
+  UINT8 ct_exponent;
+  UINT16 reserved_1;
+  UINT32 flags_CACHE_CAP : 1;
+  UINT32 flags_CERT_CAP : 1;
+  UINT32 flags_CHAL_CAP : 1;
+  UINT32 flags_MEAS_CAP : 2 { flags_MEAS_CAP != 0x3 };
+  UINT32 flags_MEAS_FRESH_CAP : 1;
+  UINT32 flags_ENCRYPT_CAP : 1;
+  UINT32 flags_MAC_CAP : 1;
+  UINT32 flags_MUT_AUTH_CAP : 1;
+  UINT32 flags_KEY_EX_CAP : 1 { flags_KEY_EX_CAP == 0 ||
+                              (flags_ENCRYPT_CAP == 1 || flags_MAC_CAP == 1) };
+  UINT32 flags_PSK_CAP : 2 { flags_PSK_CAP != 0x3 };
+  UINT32 flags_ENCAP_CAP : 1;
+  UINT32 flags_HBEAT_CAP : 1;
+  UINT32 flags_KEY_UPD_CAP : 1;
+  UINT32 flags_HANDSHAKE_IN_THE_CLEAR_CAP : 1;
+  UINT32 flags_CHUNK_CAP : 1;
+  UINT32 flags_ALIAS_CERT_CAP : 1;
+  UINT32 flags_reserved : 13;
+  UINT32 data_transfer_size;
+  UINT32 max_spdm_message_size { max_spdm_message_size >= data_transfer_size };
+} Capabilities;
+
+
+// NEGOTIATE_ALGORITHMS / ALGORITHMS
+
+#define MAX_ALGS 20
+
+UINT8 enum AlgType {
+    AlgType_DHE = 2,
+    AlgType_AEAD = 3,
+    AlgType_Asym = 4,
+    AlgType_KeySchedule = 5,
+};
+
+// Table 27
+typedef struct _ExtendedAlg {
+  UINT8 registry_id;
+  UINT8 reserved;
+  UINT16 algorithm_id;
+} ExtendedAlg;
+
+// Table 16/22
+typedef struct _AlgStruct(Bool is_resp) {
+  UINT8 alg_type;
+  UINT8 alg_count_extended : 4 { alg_count_extended <= MAX_ALGS };
+  UINT8 alg_count_fixed_width : 4 { (alg_count_fixed_width + 2) % 4 == 0 };
+  UINT8 algs_supported[:byte-size alg_count_fixed_width];
+  ExtendedAlg extended_algs[:byte-size 4 * alg_count_extended]
+  {:on-success
+    if (is_resp) {
+      return alg_count_extended <= 1;
+    } else {
+      return true;
+    }
+  };
+} AlgStruct;
+
+// TODO: missing a lot of mutable args for the selected algos.
+
+// Part of tables 15 and 21
+typedef struct _AsymHashAlgs(Bool is_resp) {
+  UINT32 base_asym_alg_rsa_ssa_2048 : 1;
+  UINT32 base_asym_alg_rsa_pss_2048 : 1;
+  UINT32 base_asym_alg_rsa_ssa_3072 : 1;
+  UINT32 base_asym_alg_rsa_pss_3072 : 1;
+  UINT32 base_asym_alg_ecdsa_ecc_nist_p256 : 1;
+  UINT32 base_asym_alg_rsa_pss_4096 : 1;
+  UINT32 base_asym_alg_rsa_ssa_4096 : 1;
+  UINT32 base_asym_alg_ecdsa_ecc_nist_p384 : 1;
+  UINT32 base_asym_alg_ecdsa_ecc_nist_p521 : 1;
+  UINT32 base_asym_alg_sm2_ecc_sm2_p256 : 1;
+  UINT32 base_asym_alg_ed25519 : 1;
+  UINT32 base_asym_alg_ed448 : 1;
+  UINT32 base_asym_alg_reserved : 20
+  {:on-success
+    if (is_resp) {
+      return base_asym_alg_rsa_ssa_2048 +
+             base_asym_alg_rsa_pss_2048 +
+             base_asym_alg_rsa_ssa_3072 +
+             base_asym_alg_rsa_pss_3072 +
+             base_asym_alg_ecdsa_ecc_nist_p256 +
+             base_asym_alg_rsa_pss_4096 +
+             base_asym_alg_rsa_ssa_4096 +
+             base_asym_alg_ecdsa_ecc_nist_p384 +
+             base_asym_alg_ecdsa_ecc_nist_p521 +
+             base_asym_alg_sm2_ecc_sm2_p256 +
+             base_asym_alg_ed25519 +
+             base_asym_alg_ed448 <= 1;
+    } else {
+      return true;
+    }
+  };
+  UINT32 base_hash_algo_sha_256 : 1;
+  UINT32 base_hash_algo_sha_384 : 1;
+  UINT32 base_hash_algo_sha_512 : 1;
+  UINT32 base_hash_algo_sha3_256 : 1;
+  UINT32 base_hash_algo_sha3_384 : 1;
+  UINT32 base_hash_algo_sha3_512 : 1;
+  UINT32 base_hash_algo_sm3_256 : 1;
+  UINT32 base_hash_algo_reserved : 25
+  {:on-success
+    if (is_resp) {
+      return base_hash_algo_sha_256 +
+             base_hash_algo_sha_384 +
+             base_hash_algo_sha_512 +
+             base_hash_algo_sha3_256 +
+             base_hash_algo_sha3_384 +
+             base_hash_algo_sha3_512 +
+             base_hash_algo_sm3_256 <= 1;
+    } else {
+      return true;
+    }
+  };
+  unit end;
+} AsymHashAlgs;
+
+// Table 15
+entrypoint typedef struct _NegotiateAlgorithms(
+    mutable PUINT8* out_ext_asym_algs,
+    mutable UINT32* out_ext_asym_count,
+    mutable PUINT8* out_ext_hash_algs,
+    mutable UINT32* out_ext_hash_count,
+    mutable PUINT8* out_alg_structs,
+    mutable UINT32* out_alg_struct_count,
+    mutable UINT32* out_alg_structs_len) {
+  Preamble(NEGOTIATE_ALGORITHMS) preamble;
+  UINT8 param_1_alg_struct_count { param_1_alg_struct_count <= MAX_ALGS };
+  UINT8 param_2_reserved;
+  UINT16 length { length <= 128 };
+  UINT8 meas_spec_dmtf : 1;
+  UINT8 meas_spec_reserved : 7;
+  UINT8 other_params_opaque_data_fmt_0 : 1;
+  UINT8 other_params_opaque_data_fmt_1 : 1;
+  UINT8 other_params_opaque_data_fmt_reserved : 2;
+  UINT8 other_params_reserved : 4;
+  AsymHashAlgs(/*is_resp=*/false) asym_hash_algs;
+  UINT8 reserved_0[12];
+  UINT8 ext_asym_count { ext_asym_count <= MAX_ALGS };
+  UINT8 ext_hash_count {
+    ext_hash_count <= MAX_ALGS &&
+    ext_hash_count + ext_asym_count <= MAX_ALGS &&
+    length >= sizeof(this) + 4 * (ext_asym_count + ext_hash_count)
+  };
+  UINT16 reserved_1;
+  ExtendedAlg ext_asym[:byte-size 4 * ext_asym_count]
+  {:on-success
+    var ptr = field_ptr;
+    *out_ext_asym_algs = ptr;
+    *out_ext_asym_count = ext_asym_count;
+    return true;
+  };
+  ExtendedAlg ext_hash[:byte-size 4 * ext_hash_count]
+  {:on-success
+    var ptr = field_ptr;
+    *out_ext_hash_algs = ptr;
+    *out_ext_hash_count = ext_hash_count;
+    return true;
+  };
+  AlgStruct(/*is_resp=*/false) alg_structs[:byte-size length - (sizeof(this) + 4 * (ext_asym_count + ext_hash_count)) ]
+  {:on-success
+    var ptr = field_ptr;
+    *out_alg_structs = ptr;
+    *out_alg_struct_count = param_1_alg_struct_count;
+    *out_alg_structs_len = length - (sizeof(this) + 4 * (ext_asym_count + ext_hash_count));
+    return true;
+  };
+} NegotiateAlgorithms;
+
+// Table 21
+entrypoint typedef struct _Algorithms(
+    mutable PUINT8* out_ext_asym_algs,
+    mutable UINT32* out_ext_asym_count,
+    mutable PUINT8* out_ext_hash_algs,
+    mutable UINT32* out_ext_hash_count,
+    mutable PUINT8* out_alg_structs,
+    mutable UINT32* out_alg_struct_count,
+    mutable UINT32* out_alg_structs_len) {
+  Preamble(ALGORITHMS) preamble;
+  UINT8 param_1_alg_struct_count { param_1_alg_struct_count <= MAX_ALGS };
+  UINT8 param_2_reserved;
+  UINT16 length { length <= 128 };
+  UINT8 meas_spec_dmtf : 1;
+  UINT8 meas_spec_reserved : 7;
+  UINT8 other_params_opaque_data_fmt_0 : 1;
+  UINT8 other_params_opaque_data_fmt_1 : 1;
+  UINT8 other_params_opaque_data_fmt_reserved : 2;
+  UINT8 other_params_reserved : 4;
+  UINT32 meas_hash_alg_raw_bitstream_only : 1;
+  UINT32 meas_hash_alg_sha_256 : 1;
+  UINT32 meas_hash_alg_sha_384 : 1;
+  UINT32 meas_hash_alg_sha_512 : 1;
+  UINT32 meas_hash_alg_sha3_256 : 1;
+  UINT32 meas_hash_alg_sha3_384 : 1;
+  UINT32 meas_hash_alg_sha3_512 : 1;
+  UINT32 meas_hash_alg_sm3_256 : 1;
+  UINT32 meas_hash_alg_reserved : 24
+  { meas_hash_alg_raw_bitstream_only +
+    meas_hash_alg_sha_256 +
+    meas_hash_alg_sha_384 +
+    meas_hash_alg_sha_512 +
+    meas_hash_alg_sha3_256 +
+    meas_hash_alg_sha3_384 +
+    meas_hash_alg_sha3_512 +
+    meas_hash_alg_sm3_256 <= 1 };
+  AsymHashAlgs(/*is_resp=*/true) asym_hash_algs;
+  UINT8 reserved_0[12];
+  UINT8 ext_asym_count { ext_asym_count <= 1 };
+  UINT8 ext_hash_count { ext_hash_count <= 1 &&
+                         length >= sizeof(this) + 4 * (ext_asym_count + ext_hash_count) };
+  UINT16 reserved_1;
+  ExtendedAlg ext_asym[:byte-size 4 * ext_asym_count]
+  {:on-success
+    var ptr = field_ptr;
+    *out_ext_asym_algs = ptr;
+    *out_ext_asym_count = ext_asym_count;
+    return true;
+  };
+  ExtendedAlg ext_hash[:byte-size 4 * ext_hash_count]
+  {:on-success
+    var ptr = field_ptr;
+    *out_ext_hash_algs = ptr;
+    *out_ext_hash_count = ext_hash_count;
+    return true;
+  };
+  AlgStruct(/*is_resp=*/true) alg_structs[:byte-size length - (sizeof(this) + 4 * (ext_asym_count + ext_hash_count)) ]
+  {:on-success
+    var ptr = field_ptr;
+    *out_alg_structs = ptr;
+    *out_alg_struct_count = param_1_alg_struct_count;
+    *out_alg_structs_len = length - (sizeof(this) + 4 * (ext_asym_count + ext_hash_count));
+    return true;
+  };
+} Algorithms;
+
+// The user is expected to individually parse each alg struct based on its type.
+
+// Table 17/23
+entrypoint typedef struct _DheAlg(
+    Bool is_resp,
+    mutable UINT32* out_alg_count_extended) {
+  UINT8 alg_type { alg_type == AlgType_DHE };
+  UINT8 alg_count_extended : 4 { alg_count_extended <= MAX_ALGS };
+  UINT8 alg_count_fixed_width : 4 { alg_count_fixed_width == 2 };
+  UINT16 alg_supported_ffdhe2048 : 1;
+  UINT16 alg_supported_ffdhe3072 : 1;
+  UINT16 alg_supported_ffdhe4096 : 1;
+  UINT16 alg_supported_secp256r1 : 1;
+  UINT16 alg_supported_secp384r1 : 1;
+  UINT16 alg_supported_secp521r1 : 1;
+  UINT16 alg_supported_sm2_p256 : 1;
+  UINT16 alg_supported_reserved : 9;
+  ExtendedAlg alg_external[:byte-size 4 * alg_count_extended]
+  {:on-success
+    *out_alg_count_extended = alg_count_extended;
+    if (is_resp) {
+      return (alg_count_extended + alg_supported_ffdhe2048 +
+                                   alg_supported_ffdhe3072 +
+                                   alg_supported_ffdhe4096 +
+                                   alg_supported_secp256r1 +
+                                   alg_supported_secp384r1 +
+                                   alg_supported_secp521r1 +
+                                   alg_supported_sm2_p256) <= 1;
+    } else {
+      return true;
+    }
+  };
+} DheAlg;
+
+// Table 18/24
+entrypoint typedef struct _AeadAlg(
+    Bool is_resp,
+    mutable UINT32* out_alg_count_extended) {
+  UINT8 alg_type { alg_type == AlgType_AEAD };
+  UINT8 alg_count_extended : 4 { alg_count_extended <= MAX_ALGS };
+  UINT8 alg_count_fixed_width : 4 { alg_count_fixed_width == 2 };
+  UINT16 alg_supported_aes_128_gcm : 1;
+  UINT16 alg_supported_aes_256_gcm : 1;
+  UINT16 alg_supported_chacha20_poly1305 : 1;
+  UINT16 alg_supported_aead_sm4_gcm : 1;
+  UINT16 alg_supported_reserved : 12;
+  ExtendedAlg alg_external[:byte-size 4 * alg_count_extended]
+  {:on-success
+    *out_alg_count_extended = alg_count_extended;
+    if (is_resp) {
+      return (alg_count_extended + alg_supported_aes_128_gcm +
+                                   alg_supported_aes_256_gcm +
+                                   alg_supported_chacha20_poly1305 +
+                                   alg_supported_aead_sm4_gcm) <= 1;
+    } else {
+      return true;
+    }
+  };
+} AeadAlg;
+
+// Table 19/25
+entrypoint typedef struct _AsymAlg(
+    Bool is_resp,
+    mutable UINT32* out_alg_count_extended) {
+  UINT8 alg_type { alg_type == AlgType_Asym };
+  UINT8 alg_count_extended : 4 { alg_count_extended <= MAX_ALGS };
+  UINT8 alg_count_fixed_width : 4 { alg_count_fixed_width == 2 };
+  UINT16 alg_supported_rsa_ssa_2048 : 1;
+  UINT16 alg_supported_rsa_pss_2048 : 1;
+  UINT16 alg_supported_rsa_ssa_3072 : 1;
+  UINT16 alg_supported_rsa_pss_3072 : 1;
+  UINT16 alg_supported_ecdsa_ecc_nist_p256 : 1;
+  UINT16 alg_supported_rsa_pss_4096 : 1;
+  UINT16 alg_supported_rsa_ssa_4096 : 1;
+  UINT16 alg_supported_ecdsa_ecc_nist_p384 : 1;
+  UINT16 alg_supported_ecdsa_ecc_nist_p521 : 1;
+  UINT16 alg_supported_sm2_ecc_sm2_p256 : 1;
+  UINT16 alg_supported_ed25519 : 1;
+  UINT16 alg_supported_ed448 : 1;
+  UINT16 alg_supported_reserved : 4;
+  ExtendedAlg alg_external[:byte-size 4 * alg_count_extended]
+  {:on-success
+    *out_alg_count_extended = alg_count_extended;
+    if (is_resp) {
+      return (alg_count_extended + alg_supported_rsa_ssa_2048 +
+                                   alg_supported_rsa_pss_2048 +
+                                   alg_supported_rsa_ssa_3072 +
+                                   alg_supported_rsa_pss_3072 +
+                                   alg_supported_ecdsa_ecc_nist_p256 +
+                                   alg_supported_rsa_pss_4096 +
+                                   alg_supported_rsa_ssa_4096 +
+                                   alg_supported_ecdsa_ecc_nist_p384 +
+                                   alg_supported_ecdsa_ecc_nist_p521 +
+                                   alg_supported_sm2_ecc_sm2_p256 +
+                                   alg_supported_ed25519 +
+                                   alg_supported_ed448) <= 1;
+    } else {
+      return true;
+    }
+  };
+} AsymAlg;
+
+// Table 20/26
+entrypoint typedef struct _KeySchedule(
+    Bool is_resp,
+    mutable UINT32* out_alg_count_extended) {
+  UINT8 alg_type { alg_type == AlgType_KeySchedule };
+  UINT8 alg_count_extended : 4 { alg_count_extended <= MAX_ALGS };
+  UINT8 alg_count_fixed_width : 4 { alg_count_fixed_width == 2 };
+  UINT16 alg_supported_spdm_key_schedule : 1;
+  UINT16 alg_supported_reserved : 15;
+  ExtendedAlg alg_external[:byte-size 4 * alg_count_extended]
+  {:on-success
+    *out_alg_count_extended = alg_count_extended;
+    if (is_resp) {
+      return (alg_count_extended + alg_supported_spdm_key_schedule) <= 1;
+    } else {
+      return true;
+    }
+  };
+} KeySchedule;
+
+
+// GET_MEASUREMENTS / MEASUREMENTS
+
+// Table 40
+entrypoint typedef struct _GetMeasurements(
+    mutable Bool* out_signature_requested,
+    mutable Bool* out_raw_bitstream_requested,
+    mutable UINT8* out_operation,
+    mutable PUINT8* out_nonce,
+    mutable UINT8* out_slot_id) {
+  Preamble(GET_MEASUREMENTS) preamble;
+  UINT8 param_1_signature_requested : 1;
+  UINT8 param_1_raw_bitstream_requested : 1;
+  UINT8 param_1_reserved : 6;
+  UINT8 param_2_operation;
+  OptionalBuffer(param_1_signature_requested == 1, 32) nonce
+  {:on-success
+    var ptr = field_ptr;
+    *out_signature_requested = (param_1_signature_requested == 1);
+    *out_raw_bitstream_requested = (param_1_raw_bitstream_requested == 1);
+    *out_operation = param_2_operation;
+    *out_nonce = ptr;
+    return true;
+  };
+  UINT8 slot_id_param_slot_id : 4
+  {:on-success
+    *out_slot_id = slot_id_param_slot_id;
+    return true;
+  };
+  UINT8 slot_id_param_reserved : 4;
+} GetMeasurements;
+
+// Table 43
+entrypoint typedef struct _Measurements(
+    Bool expect_measurement_count,
+    Bool expect_signature,
+    UINT32 signature_len,
+    mutable UINT8* out_slot_id,
+    mutable UINT8* out_content_changed,
+    mutable UINT32* out_number_of_blocks,
+    mutable UINT32* out_record_length,
+    mutable PUINT8* out_record_data,
+    mutable PUINT8* out_nonce,
+    mutable UINT16* out_opaque_data_length,
+    mutable PUINT8* out_opaque_data,
+    mutable PUINT8* out_signature) {
+  Preamble(MEASUREMENTS) preamble;
+  UINT8 param_1;
+  UINT8 param_2_slot_id : 4;
+  UINT8 param_2_content_changed : 2;
+  UINT8 param_2_reserved : 2;
+  UINT32 number_of_blocks : 8;
+  UINT32 record_length : 24
+  {:on-success
+    return !expect_measurement_count || (number_of_blocks == 0 && record_length == 0);
+  };
+  UINT8 record_data[record_length]
+  {:on-success
+    var ptr = field_ptr;
+    *out_slot_id = param_2_slot_id;
+    *out_content_changed = param_2_content_changed;
+    *out_number_of_blocks = number_of_blocks;
+    *out_record_length = record_length;
+    *out_record_data = ptr;
+    return true;
+  };
+  UINT8 nonce[32]
+  {:on-success
+    var ptr = field_ptr;
+    *out_nonce = ptr;
+    return true;
+  };
+  UINT16 opaque_data_length { opaque_data_length <= 1024 };
+  UINT8 opaque_data[opaque_data_length]
+  {:on-success
+    var ptr = field_ptr;
+    *out_opaque_data_length = opaque_data_length;
+    *out_opaque_data = ptr;
+    return true;
+  };
+  OptionalBuffer(expect_signature, signature_len) signature
+  {:on-success
+    var ptr = field_ptr;
+    *out_signature = ptr;
+    return true;
+  };
+} Measurements;
+
+#define MEASUREMENT_SPEC_DMTF 0
+
+// Table 44
+entrypoint typedef struct _MeasurementBlock(
+    mutable UINT8* out_index,
+    mutable UINT8* out_measurement_spec,
+    mutable UINT16* out_measurement_size,
+    mutable PUINT8* out_measurement) {
+  UINT8 index;
+  UINT8 measurement_specification_dmtf : 1;
+  UINT8 measurement_specification_reserved : 7
+  {:on-success
+    if (measurement_specification_dmtf == 1) {
+      *out_measurement_spec = MEASUREMENT_SPEC_DMTF;
+      return true;
+    } else {
+      return false;
+    }
+  };
+  UINT16 measurement_size;
+  UINT8 measurement[measurement_size]
+  {:on-success
+    var ptr = field_ptr;
+    *out_index = index;
+    *out_measurement_size = measurement_size;
+    *out_measurement = ptr;
+    return true;
+  };
+} MeasurementBlock;
+
+// Table 45
+entrypoint typedef struct _DmtfMeasurement(
+    mutable Bool* out_raw_bitstream,
+    mutable UINT8* out_value_type,
+    mutable UINT16* out_value_size,
+    mutable PUINT8* out_value) {
+  UINT8 value_type_representation : 1;
+  UINT8 value_type : 7;
+  UINT16 value_size;
+  UINT8 value[value_size]
+  {:on-success
+    var ptr = field_ptr;
+    *out_raw_bitstream = (value_type_representation == 1);
+    *out_value_type = value_type;
+    *out_value_size = value_size;
+    *out_value = ptr;
+    return true;
+  };
+} DmtfMeasurement;
+
+// KEY_EXCHANGE / KEY_EXCHANGE_RSP
+
+// Table 58
+entrypoint typedef struct _KeyExchange (
+    UINT32 exchange_data_len,
+    mutable UINT8* out_requested_measurement_summary_type,
+    mutable UINT8* out_slot_id,
+    mutable PUINT8* out_req_session_id,
+    mutable Bool* out_session_policy_termination,
+    mutable PUINT8* out_exchange_data,
+    mutable PUINT8* out_opaque_data,
+    mutable UINT32* out_opaque_data_len) {
+  Preamble(KEY_EXCHANGE) preamble;
+  UINT8 param_1_measurement_summary_type {
+      param_1_measurement_summary_type <= 1 ||
+      param_1_measurement_summary_type == 0xFF
+  } {:on-success
+    *out_requested_measurement_summary_type = param_1_measurement_summary_type;
+    return true;
+  };
+  UINT8 param_2_slot_id {
+    param_2_slot_id <= 7 ||
+    param_2_slot_id == 0xFF
+  } {:on-success
+    *out_slot_id = param_2_slot_id;
+    return true;
+  };
+  UINT8 req_session_id[2]
+  {:on-success
+    var ptr = field_ptr;
+    *out_req_session_id = ptr;
+    return true;
+  };
+  UINT8 session_policy_termination : 1
+  {:on-success
+    *out_session_policy_termination = session_policy_termination == 1;
+    return true;
+  };
+  UINT8 session_policy_reserved : 7;
+  UINT8 reserved;
+  UINT8 random_data[32];
+  UINT8 exchange_data[exchange_data_len]
+  {:on-success
+    var ptr = field_ptr;
+    *out_exchange_data = ptr;
+    return true;
+  };
+  UINT16 opaque_data_length { opaque_data_length <= 1024 }
+  {:on-success
+    *out_opaque_data_len = opaque_data_length;
+    return true;
+  };
+  UINT8 opaque_data[opaque_data_length]
+  {:on-success
+    var ptr = field_ptr;
+    *out_opaque_data = ptr;
+    return true;
+  };
+} KeyExchange;
+
+// Table 60
+entrypoint typedef struct _KeyExchangeRsp(
+    UINT32 exchange_data_len,
+    UINT32 hash_len,
+    UINT32 signature_len,
+    Bool measurement_summary_hash_expected,
+    Bool responder_verify_data_expected,
+    mutable UINT8* out_heartbeat_period,
+    mutable PUINT8* out_rsp_session_id,
+    mutable UINT8* out_mut_auth_requested_flow,
+    mutable UINT8* out_slot_id,
+    mutable PUINT8* out_exchange_data,
+    mutable PUINT8* out_measurement_summary_hash,
+    mutable PUINT8* out_opaque_data,
+    mutable UINT32* out_opaque_data_len,
+    mutable PUINT8* out_signature,
+    mutable PUINT8* out_responder_verify_data) {
+  Preamble(KEY_EXCHANGE_RSP) preamble;
+  UINT8 param_1_heartbeat_period
+  {:on-success
+    *out_heartbeat_period = param_1_heartbeat_period;
+    return true;
+  };
+  UINT8 param_2_reserved;
+  UINT8 rsp_session_id[2]
+  {:on-success
+    var ptr = field_ptr;
+    *out_rsp_session_id = ptr;
+    return true;
+  };
+  UINT8 mut_auth_requested_no_encapsulated_flow : 1;
+  UINT8 mut_auth_requested_encapsulated_flow : 1;
+  UINT8 mut_auth_requested_optimized_flow : 1 {
+    mut_auth_requested_no_encapsulated_flow +
+    mut_auth_requested_encapsulated_flow +
+    mut_auth_requested_optimized_flow == 1
+  } {:on-success
+    if (mut_auth_requested_no_encapsulated_flow == 1) {
+      *out_mut_auth_requested_flow = 0;
+      return true;
+    } else {
+      if (mut_auth_requested_encapsulated_flow == 1) {
+        *out_mut_auth_requested_flow = 1;
+        return true;
+      } else {
+        *out_mut_auth_requested_flow = 2;
+        return true;
+      }
+    }
+  };
+  UINT8 mut_auth_requested_reserved : 5;
+  UINT8 slot_id_param_slot_id : 4 {
+    (mut_auth_requested_no_encapsulated_flow == 1 &&
+      (slot_id_param_slot_id <= 7 ||
+       slot_id_param_slot_id == 0xF)) ||
+    slot_id_param_slot_id == 0
+  } {:on-success
+    *out_slot_id = slot_id_param_slot_id;
+    return true;
+  };
+  UINT8 slot_id_param_reserved : 4;
+  UINT8 random_data[32];
+  UINT8 exchange_data[exchange_data_len]
+  {:on-success
+    var ptr = field_ptr;
+    *out_exchange_data = ptr;
+    return true;
+  };
+  OptionalBuffer(measurement_summary_hash_expected, hash_len) measurement_summary_hash
+  {:on-success
+    var ptr = field_ptr;
+    *out_measurement_summary_hash = ptr;
+    return true;
+  };
+  UINT16 opaque_data_length { opaque_data_length <= 1024 }
+  {:on-success
+    *out_opaque_data_len = opaque_data_length;
+    return true;
+  };
+  UINT8 opaque_data[opaque_data_length]
+  {:on-success
+    var ptr = field_ptr;
+    *out_opaque_data = ptr;
+    return true;
+  };
+  UINT8 signature[signature_len]
+  {:on-success
+    var ptr = field_ptr;
+    *out_signature = ptr;
+    return true;
+  };
+  OptionalBuffer(responder_verify_data_expected, hash_len) responder_verify_data
+  {:on-success
+    var ptr = field_ptr;
+    *out_responder_verify_data = ptr;
+    return true;
+  };
+} KeyExchangeRsp;
+
+
+// GET_ENCAPSULATED_REQUEST / ENCAPSULATED_REQUEST
+
+// Table 72
+entrypoint typedef struct _GetEncapsulatedRequest {
+  Preamble(GET_ENCAPSULATED_REQUEST) preamble;
+  ReservedParams params;
+} GetEncapsulatedRequest;
+
+// Table 73
+entrypoint typedef struct _EncapsulatedRequest(
+    mutable UINT8* out_request_id) {
+  Preamble(ENCAPSULATED_REQUEST) preamble;
+  UINT8 param_1_request_id
+  {:on-success
+    *out_request_id = param_1_request_id;
+    return true;
+  };
+  UINT8 param_2_reserved;
+  // UINT8 encapsulated_request[]
+} EncapsulatedRequest;
+
+
+// DELIVER_ENCAPSULATED_RESPONSE / ENCAPSULATED_RESPONSE_ACK
+
+// Table 74
+entrypoint typedef struct _DeliverEncapsulatedResponse(
+    mutable UINT8* out_request_id) {
+  Preamble(DELIVER_ENCAPSULATED_RESPONSE) preamble;
+  UINT8 param_1_request_id
+  {:on-success
+    *out_request_id = param_1_request_id;
+    return true;
+  };
+  UINT8 param_2_reserved;
+  // UINT8 encapsulated_response[]
+} DeliverEncapsulatedResponse;
+
+// Table 75
+entrypoint typedef struct _EncapsulatedResponseAck(
+    mutable UINT8* out_request_id,
+    mutable UINT8* out_payload_type,
+    mutable UINT8* out_ack_request_id) {
+  Preamble(ENCAPSULATED_RESPONSE_ACK) preamble;
+  UINT8 param_1_request_id;
+  UINT8 param_2_payload_type { param_2_payload_type <= 0x02 };
+  UINT8 ack_request_id;
+  UINT8 reserved[3]
+  {:on-success
+    *out_request_id = param_1_request_id;
+    *out_payload_type = param_2_payload_type;
+    *out_ack_request_id = ack_request_id;
+    return true;
+  };
+  // UINT8 encapsulated_request[]
+} EncapsulatedResponseAck;
+
+
+// END_SESSION / END_SESSION_ACK
+
+// Table 76
+entrypoint typedef struct _EndSession(
+    mutable Bool* out_preserve_negotiated_state) {
+  Preamble(END_SESSION) preamble;
+  UINT8 param_1_negotiated_state_preservation_indicator : 1
+  {:on-success
+    *out_preserve_negotiated_state = (param_1_negotiated_state_preservation_indicator == 1);
+    return true;
+  };
+  UINT8 param_1_reserved : 7;
+  UINT8 param_2_reserved;
+} EndSession;
+
+// Table 78
+entrypoint typedef struct _EndSessionAck {
+  Preamble(END_SESSION_ACK) preamble;
+  ReservedParams params;
+} EndSessionAck;
+
+
+// FINISH / FINISH_RSP
+
+// Table 61
+entrypoint typedef struct _Finish(
+    UINT32 hash_len,
+    UINT32 signature_len,
+    mutable Bool* out_sig_included,
+    mutable UINT8* out_slot_id,
+    mutable PUINT8* out_sig,
+    mutable PUINT8* out_verify_data) {
+  Preamble(FINISH) preamble;
+  UINT8 param_1_sig_included : 1;
+  UINT8 param_1_reserved : 7;
+  UINT8 param_2_slot_id { param_2_slot_id <= 7 || param_2_slot_id == 0xFF };
+  OptionalBuffer(param_1_sig_included == 1, signature_len) signature
+  {:on-success
+    var ptr = field_ptr;
+    *out_sig_included = param_1_sig_included == 1;
+    *out_slot_id = param_2_slot_id;
+    *out_sig = ptr;
+    return true;
+  };
+  UINT8 requester_verify_data[:byte-size hash_len]
+  {:on-success
+    var ptr = field_ptr;
+    *out_verify_data = ptr;
+    return true;
+  };
+} Finish;
+
+// Table 62
+entrypoint typedef struct _FinishRsp(
+    UINT32 hash_len,
+    Bool responder_verify_data_expected,
+    mutable PUINT8* out_responder_verify_data) {
+  Preamble(FINISH_RSP) preamble;
+  ReservedParams params;
+  OptionalBuffer(responder_verify_data_expected, hash_len) responder_verify_data
+  {:on-success
+    var ptr = field_ptr;
+    *out_responder_verify_data = ptr;
+    return true;
+  };
+} FinishRsp;
+
+
+// VENDOR_DEFINED_REQUEST / VENDOR_DEFINED_RESPONSE
+
+// Table 56 / 57
+typedef struct _VendorDefinedBody(
+    UINT8 code,
+    mutable UINT16* out_standard_id,
+    mutable PUINT8* out_vendor_id,
+    mutable UINT32* out_vendor_id_len,
+    mutable PUINT8* out_payload,
+    mutable UINT32* out_payload_len) {
+  Preamble(code) preamble;
+  UINT8 param_1_reserved;
+  UINT8 param_2_reserved;
+  UINT16 standard_id;
+  UINT8 vendor_id_len;
+  UINT8 vendor_id[vendor_id_len]
+  {:on-success
+    var ptr = field_ptr;
+    *out_standard_id = standard_id;
+    *out_vendor_id = ptr;
+    *out_vendor_id_len = vendor_id_len;
+    return true;
+  };
+  UINT16 req_len;
+  UINT8 req_payload[req_len]
+  {:on-success
+    var ptr = field_ptr;
+    *out_payload = ptr;
+    *out_payload_len = req_len;
+    return true;
+  };
+} VendorDefinedBody;
+
+// Table 56
+
+entrypoint typedef struct _VendorDefinedRequest(
+    mutable UINT16* out_standard_id,
+    mutable PUINT8* out_vendor_id,
+    mutable UINT32* out_vendor_id_len,
+    mutable PUINT8* out_payload,
+    mutable UINT32* out_payload_len) {
+  VendorDefinedBody(VENDOR_DEFINED_REQUEST,
+                    out_standard_id,
+                    out_vendor_id,
+                    out_vendor_id_len,
+                    out_payload,
+                    out_payload_len) body;
+} VendorDefinedRequest;
+
+// Table 57
+entrypoint typedef struct _VendorDefinedResponse(
+    mutable UINT16* out_standard_id,
+    mutable PUINT8* out_vendor_id,
+    mutable UINT32* out_vendor_id_len,
+    mutable PUINT8* out_payload,
+    mutable UINT32* out_payload_len) {
+  VendorDefinedBody(VENDOR_DEFINED_RESPONSE,
+                    out_standard_id,
+                    out_vendor_id,
+                    out_vendor_id_len,
+                    out_payload,
+                    out_payload_len) body;
+} VendorDefinedResponse;
+
+
+// ERROR
+
+// Table 49
+typedef struct _ResponseNotReadyExtendedError {
+  UINT8 rdt_exponent;
+  UINT8 request_code;
+  UINT8 token;
+  UINT8 rdtm;
+} ResponseNotReadyExtendedError;
+
+// Table 51
+typedef struct _VendorDefinedExtendedError {
+  UINT8 len;
+  UINT8 vendor_id[len];
+  // UINT8 opaque_error_data[];
+} VendorDefinedExtendedError;
+
+// Table 52
+typedef struct _ResponseTooLargeExtendedError {
+  UINT32 actual_size;
+} ResponseTooLargeExtendedError;
+
+// Table 53
+typedef struct _LargeResponseExtendedError {
+  UINT8 handle;
+} LargeResponseExtendedError;
+
+entrypoint casetype _ExtendedError(UINT8 code) {
+  switch(code) {
+    case 0x0D: ResponseTooLargeExtendedError error_response_too_large;
+    case 0x0F: LargeResponseExtendedError    error_large_response;
+    case 0x42: ResponseNotReadyExtendedError error_response_not_ready;
+    case 0xFF: VendorDefinedExtendedError    error_vendor_defined;
+    default: unit noop;
+  }
+} ExtendedError;
+
+// Table 47
+entrypoint typedef struct _Error(
+    mutable UINT8* out_error_code,
+    mutable UINT8* out_error_data) {
+  Preamble(ERROR) preamble;
+  UINT8 param_1_error_code;
+  UINT8 param_2_error_data
+  {:on-success
+    *out_error_code = param_1_error_code;
+    *out_error_data = param_2_error_data;
+    return true;
+  };
+  // ExtendedError(param_1_error_code) extended_error_data;
+} Error;
+
+
+// Opaque Data
+
+// Table 93
+entrypoint typedef struct _OpaqueElement(
+    mutable UINT8* out_id,
+    mutable PUINT8* out_vendor_id,
+    mutable UINT32* out_vendor_len,
+    mutable PUINT8* out_opaque_element_data,
+    mutable UINT32* out_opaque_element_data_len) {
+  UINT8 id;
+  UINT8 vendor_len;
+  UINT8 vendor_id[vendor_len]
+  {:on-success
+    var ptr = field_ptr;
+    *out_id = id;
+    *out_vendor_id = ptr;
+    *out_vendor_len = vendor_len;
+    return true;
+  };
+  UINT16 opaque_element_data_len;
+  UINT8 opaque_element_data[opaque_element_data_len]
+  {:on-success
+    var ptr = field_ptr;
+    *out_opaque_element_data = ptr;
+    *out_opaque_element_data_len = opaque_element_data_len;
+    return true;
+  };
+  UINT8 padding[:byte-size (4 - (((vendor_len % 4) + (opaque_element_data_len % 4)) % 4)) % 4 ];
+} OpaqueElement;
+
+
+// Secured message records
+
+entrypoint typedef struct _SecuredMessageRecord(
+    UINT32 seq_num_len,
+    UINT32 mac_len,
+    mutable UINT32* out_session_id,
+    mutable PUINT8* out_seq_num,
+    mutable PUINT8* out_ciphertext,
+    mutable UINT32* out_ciphertext_len,
+    mutable PUINT8* out_mac) where mac_len <= 512 {
+  UINT32 session_id;
+  UINT8 sequence_number[seq_num_len]
+  {:on-success
+    var ptr = field_ptr;
+    *out_session_id = session_id;
+    *out_seq_num = ptr;
+    return true;
+  };
+  UINT16 length { length >= 2 + mac_len };
+  UINT8 ciphertext[length - mac_len]
+  {:on-success
+    var ptr = field_ptr;
+    *out_ciphertext = ptr;
+    *out_ciphertext_len = length - mac_len;
+    return true;
+  };
+  UINT8 mac[mac_len]
+  {:on-success
+    var ptr = field_ptr;
+    *out_mac = ptr;
+    return true;
+  };
+} SecuredMessageRecord;

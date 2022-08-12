@@ -1,0 +1,81 @@
+# SPDM-Lite
+
+This library implements SPDM 1.2 secure sessions.
+
+This is not an official Google product.
+
+## Build
+
+### Install Dependencies
+
+On Debian and Ubuntu install the following packages:
+
+```
+$ sudo apt install libmbedtls-dev cmake
+```
+
+### Build and run tests
+
+*Note: test code will likely build on Windows with some effort but has not yet
+been tested*
+
+```
+$ cmake -B build
+$ cmake --build build
+$ ctest --test-dir build
+```
+
+## User guide
+
+### Requesters
+
+Requesters are expected to call `spdm_establish_session`, and then
+`spdm_dispatch_app_request` for each subsequent message sent over the secure
+session. Requesters can tear down the session by calling `spdm_end_session`.
+
+Requesters are expected to initialize and provide an `SpdmDispatchRequestCtx`,
+which provides both a function pointer used to dispatch messages to the
+Responder, as well as scratch memory used for staging encrypted requests and
+responses. The scratch memory should be as large as
+`(max request or response size + SPDM_SECURE_MESSAGE_OVERHEAD)`
+
+### Responders
+
+Responders are expected to call one of the following two functions upon receipt
+of an SPDM request:
+
+* `spdm_dispatch_request`
+* `spdm_dispatch_secure_request`
+
+It is the responsibility of the Responder to implement transport framing that
+distinguishes between secure and non-secure SPDM messages.
+
+In addition, Responders are expected to provide a callback function of type
+`spdm_app_dispatch_request_fn`, which will be invoked upon receipt of a
+vendor-defined command sent within an established secure session.
+
+This implementation currently only supports one active session at a time.
+
+### Crypto
+
+Requesters and Responders are expected to implement an instance of
+`SpdmCryptoSpec`.
+
+## Parsers
+
+This library parses SPDM messages using
+[EverParse](https://project-everest.github.io/everparse/). See
+`everparse/SPDM.3d` for a description of each message, expressed in EverParse's
+[Dependent Data Description language](https://project-everest.github.io/everparse/3d-lang.html).
+`everparse/build.sh` will generate the parser functions.
+`everparse/SPDMWrapper.{h,c}` contains manually-created wrapper functions to
+better integrate with the type system used in spdm-lite.
+
+## TODO
+
+*   Endian conversion
+*   Error codes
+*   Max message size
+*   Timing (ct_exponent etc.)
+*   Custom alg negotiation algorithm
+*   GET_CERTIFICATE / KEY_UPDATE / HEARTBEAT / CHUNK_SEND etc.
