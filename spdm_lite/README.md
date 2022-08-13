@@ -78,8 +78,8 @@ better integrate with the type system used in spdm-lite.
 ## TODO
 
 *   Endian conversion
-*   Error codes
-*   Max message size
+*   Error codes / debug messages
+*   Max message size enforcement
 *   Timing (ct_exponent etc.)
-*   Custom alg negotiation algorithm
+*   Customizable algorithm negotiation routine
 *   GET_CERTIFICATE / KEY_UPDATE / HEARTBEAT / CHUNK_SEND etc.

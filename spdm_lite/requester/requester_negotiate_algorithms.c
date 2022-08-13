@@ -46,6 +46,7 @@ static int write_negotiate_algorithms(SpdmSupportedAlgs* supported_algs,
   negotiate_algs_msg.other_params_opaque_data_fmt_1 = 1;
 
   spdm_write_algs(supported_algs, /*is_resp=*/false,
+                  /*support_spdm_key_schedule=*/true,
                   &negotiate_algs_msg.asym_hash_algs, &dhe_msg, &aead_msg,
                   &asym_msg, &keyschedule_msg);
 
@@ -81,6 +82,7 @@ int read_algorithms(buffer rsp, SpdmSupportedAlgs* their_algs) {
   uint32_t ext_hash_algs_count;
   buffer alg_structs;
   uint32_t alg_structs_count;
+  bool supports_spdm_key_schedule;
 
   int rc = SpdmCheckAlgorithms(&rsp, /*rest=*/NULL, &ext_asym_algs,
                                &ext_asym_algs_count, &ext_hash_algs,
@@ -100,9 +102,18 @@ int read_algorithms(buffer rsp, SpdmSupportedAlgs* their_algs) {
     return -1;
   }
 
-  return spdm_get_their_supported_algs(&algs_msg.asym_hash_algs, alg_structs,
-                                       alg_structs_count, /*is_resp=*/true,
-                                       their_algs);
+  rc = spdm_get_their_supported_algs(&algs_msg.asym_hash_algs, alg_structs,
+                                     alg_structs_count, /*is_resp=*/true,
+                                     their_algs, &supports_spdm_key_schedule);
+  if (rc != 0) {
+    return rc;
+  }
+
+  if (!supports_spdm_key_schedule) {
+    return -1;
+  }
+
+  return 0;
 }
 
 static int check_negotiated_algs(const SpdmNegotiatedAlgs* negotiated_algs) {
@@ -123,10 +134,6 @@ static int check_negotiated_algs(const SpdmNegotiatedAlgs* negotiated_algs) {
   }
 
   if (negotiated_algs->aead_alg == SPDM_AEAD_UNSUPPORTED) {
-    return -1;
-  }
-
-  if (negotiated_algs->keyschedule_alg == SPDM_KEYSCHEDULE_UNSUPPORTED) {
     return -1;
   }
 

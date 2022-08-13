@@ -115,7 +115,6 @@ const SpdmCryptoSpec DUMMY_CRYPTO_SPEC = {
             .hash_sha384 = true,
             .dhe_secp384r1 = true,
             .aead_aes_256_gcm = true,
-            .keyschedule_spdm = true,
         },
     .get_random = NonRandom,
     .hash_ctx_size = 0,

@@ -26,7 +26,7 @@
 
 static int write_algorithms(const SpdmSupportedAlgs* negotiated_algs,
                             byte_writer* output, bool support_opaque_data_fmt_1,
-                            buffer* written) {
+                            bool support_spdm_key_schedule, buffer* written) {
   SPDM_ALGORITHMS algs_msg = {};
   SPDM_AlgStruct_DHE dhe_msg;
   SPDM_AlgStruct_AEAD aead_msg;
@@ -44,8 +44,9 @@ static int write_algorithms(const SpdmSupportedAlgs* negotiated_algs,
     algs_msg.other_params_opaque_data_fmt_1 = 1;
   }
 
-  spdm_write_algs(negotiated_algs, /*is_resp=*/true, &algs_msg.asym_hash_algs,
-                  &dhe_msg, &aead_msg, &asym_msg, &keyschedule_msg);
+  spdm_write_algs(negotiated_algs, /*is_resp=*/true, support_spdm_key_schedule,
+                  &algs_msg.asym_hash_algs, &dhe_msg, &aead_msg, &asym_msg,
+                  &keyschedule_msg);
 
   output_ptr = reserve_from_writer(output, algs_msg.length);
   if (output_ptr == NULL) {
@@ -88,6 +89,7 @@ int spdm_dispatch_request_waiting_for_negotiate_algorithms(
   SpdmSupportedAlgs their_algs;
   SpdmSupportedAlgs common_algs;
   bool support_opaque_data_fmt_1;
+  bool support_spdm_key_schedule;
   buffer written;
 
   if (ctx->state != STATE_WAITING_FOR_NEGOTIATE_ALGORITHMS) {
@@ -112,9 +114,9 @@ int spdm_dispatch_request_waiting_for_negotiate_algorithms(
 
   spdm_get_my_supported_algs(&ctx->crypto_spec, &ctx->responder_pub_key,
                              &my_algs);
-  rc = spdm_get_their_supported_algs(&msg.asym_hash_algs, alg_structs,
-                                     alg_structs_count,
-                                     /*is_resp=*/false, &their_algs);
+  rc = spdm_get_their_supported_algs(
+      &msg.asym_hash_algs, alg_structs, alg_structs_count,
+      /*is_resp=*/false, &their_algs, &support_spdm_key_schedule);
   if (rc != 0) {
     return spdm_write_error(SPDM_ERR_INVALID_REQUEST, output);
   }
@@ -129,7 +131,7 @@ int spdm_dispatch_request_waiting_for_negotiate_algorithms(
   }
 
   rc = write_algorithms(&common_algs, output, support_opaque_data_fmt_1,
-                        &written);
+                        support_spdm_key_schedule, &written);
   if (rc != 0) {
     return spdm_write_error(SPDM_ERR_UNSPECIFIED, output);
   }

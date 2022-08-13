@@ -103,7 +103,7 @@ static int get_asym_support(buffer* alg_structs, buffer* rest, bool is_resp,
 
 static int get_keyschedule_support(buffer* alg_structs, buffer* rest,
                                    bool is_resp,
-                                   SpdmSupportedAlgs* supported_algs) {
+                                   bool* supports_spdm_key_schedule) {
   SPDM_AlgStruct_KeySchedule keyschedule_msg;
   uint32_t alg_count_extended;
   int rc;
@@ -115,7 +115,7 @@ static int get_keyschedule_support(buffer* alg_structs, buffer* rest,
 
   memcpy(&keyschedule_msg, alg_structs->data, sizeof(keyschedule_msg));
 
-  supported_algs->keyschedule_spdm =
+  *supports_spdm_key_schedule =
       (keyschedule_msg.alg_supported_spdm_key_schedule == 1);
 
   return 0;
@@ -124,10 +124,13 @@ static int get_keyschedule_support(buffer* alg_structs, buffer* rest,
 int spdm_get_their_supported_algs(const SPDM_AsymHashAlgs* asym_hash_algs,
                                   buffer alg_structs,
                                   uint32_t alg_structs_count, bool is_resp,
-                                  SpdmSupportedAlgs* supported_algs) {
+                                  SpdmSupportedAlgs* supported_algs,
+                                  bool* supports_spdm_key_schedule) {
   memset(supported_algs, 0, sizeof(*supported_algs));
 
   get_base_alg_support(asym_hash_algs, is_resp, supported_algs);
+
+  *supports_spdm_key_schedule = false;
 
   // EverParse does not ensure that `alg_structs_count` accurately reflects the
   // number of structs in `alg_structs`. All we know is that the structs are
@@ -154,7 +157,7 @@ int spdm_get_their_supported_algs(const SPDM_AsymHashAlgs* asym_hash_algs,
         break;
       case SPDM_ALG_TYPE_KEYSCHEDULE:
         rc = get_keyschedule_support(&alg_structs, &rest, is_resp,
-                                     supported_algs);
+                                     supports_spdm_key_schedule);
         break;
     }
 
@@ -242,17 +245,6 @@ static void get_negotiated_aead_alg(const SpdmSupportedAlgs* my_algs,
   }
 }
 
-static void get_negotiated_keyschedule_alg(
-    const SpdmSupportedAlgs* my_algs, const SpdmSupportedAlgs* their_algs,
-    SpdmSupportedAlgs* common_algs, SpdmKeyScheduleAlgorithm* keyschedule_alg) {
-  if (my_algs->keyschedule_spdm && their_algs->keyschedule_spdm) {
-    common_algs->keyschedule_spdm = true;
-    *keyschedule_alg = SPDM_KEYSCHEDULE_SPDM;
-  } else {
-    *keyschedule_alg = SPDM_KEYSCHEDULE_UNSUPPORTED;
-  }
-}
-
 void spdm_get_my_supported_algs(const SpdmCryptoSpec* crypto_spec,
                                 const SpdmAsymPubKey* my_pub_key,
                                 SpdmSupportedAlgs* supported_algs) {
@@ -288,11 +280,10 @@ void spdm_get_negotiated_algs(const SpdmSupportedAlgs* my_algs,
                          &negotiated_algs->dhe_alg);
   get_negotiated_aead_alg(my_algs, their_algs, common_algs,
                           &negotiated_algs->aead_alg);
-  get_negotiated_keyschedule_alg(my_algs, their_algs, common_algs,
-                                 &negotiated_algs->keyschedule_alg);
 }
 
 void spdm_write_algs(const SpdmSupportedAlgs* algs, bool is_resp,
+                     bool support_spdm_key_schedule,
                      SPDM_AsymHashAlgs* algs_msg, SPDM_AlgStruct_DHE* dhe_msg,
                      SPDM_AlgStruct_AEAD* aead_msg,
                      SPDM_AlgStruct_BaseAsym* asym_msg,
@@ -363,7 +354,7 @@ void spdm_write_algs(const SpdmSupportedAlgs* algs, bool is_resp,
 
   keysched_msg->alg_type = SPDM_ALG_TYPE_KEYSCHEDULE;
   keysched_msg->alg_count_fixed_width = 2;
-  if (algs->keyschedule_spdm) {
+  if (support_spdm_key_schedule) {
     keysched_msg->alg_supported_spdm_key_schedule = 1;
   }
 }

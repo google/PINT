@@ -97,8 +97,6 @@ typedef struct {
 
   bool aead_aes_128_gcm;
   bool aead_aes_256_gcm;
-
-  bool keyschedule_spdm;
 } SpdmSupportedAlgs;
 
 typedef struct {
@@ -107,7 +105,6 @@ typedef struct {
   SpdmHashAlgorithm hash_alg;
   SpdmDheAlgorithm dhe_alg;
   SpdmAeadAlgorithm aead_alg;
-  SpdmKeyScheduleAlgorithm keyschedule_alg;
 } SpdmNegotiatedAlgs;
 
 // All algorithm-agile types have a field `.data` that is guaranteed to point to

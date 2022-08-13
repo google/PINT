@@ -676,7 +676,6 @@ const SpdmCryptoSpec MBEDTLS_CRYPTO_SPEC = {
             .dhe_secp521r1 = true,
             .aead_aes_128_gcm = true,
             .aead_aes_256_gcm = true,
-            .keyschedule_spdm = true,
         },
     .get_random = get_random,
     .hash_ctx_size = sizeof(HashCtx),
