@@ -16,18 +16,32 @@
 #define SPDM_LITE_TESTING_ADD_2_APP_H_
 
 #include "common/crypto_types.h"
+#include "common/defs.h"
 #include "common/session_types.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
 
-// App that echoes back the session ID and public key, as well as the given
-// uint32 double-incremented.
-int Add2AppFn(const SpdmSessionId* session_id, const SpdmAsymPubKey* pub_key,
-              uint16_t standard_id, const uint8_t* vendor_id,
-              size_t vendor_id_size, const uint8_t* payload,
-              size_t payload_size, uint8_t* output, size_t* output_size);
+typedef struct {
+  SpdmSessionId session_id;
+  uint8_t asym_sign_alg;
+  uint8_t asym_verify_alg;
+  uint8_t hash_alg;
+  uint8_t dhe_alg;
+  uint8_t aead_alg;
+  uint32_t num;
+  // uint8_t pub_key[...]
+} PACKED Add2AppResponse;
+
+// App that echoes back the session ID, negotiated algs, and public key, as well
+// as the given uint32 double-incremented.
+int add_2_app_fn(const SpdmSessionId* session_id,
+                 const SpdmNegotiatedAlgs* negotiated_algs,
+                 const SpdmAsymPubKey* pub_key, uint16_t standard_id,
+                 const uint8_t* vendor_id, size_t vendor_id_size,
+                 const uint8_t* payload, size_t payload_size, uint8_t* output,
+                 size_t* output_size);
 
 #ifdef __cplusplus
 }

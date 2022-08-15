@@ -15,8 +15,6 @@
 #include <array>
 #include <vector>
 
-#include "gtest/gtest.h"
-
 #include "common/crypto.h"
 #include "common/error.h"
 #include "common/messages.h"
@@ -26,6 +24,8 @@
 #include "responder/responder.h"
 #include "testing/host_context.h"
 #include "testing/utils.h"
+
+#include "gtest/gtest.h"
 
 namespace {
 

@@ -17,8 +17,6 @@
 #include <cstring>
 #include <vector>
 
-#include "gtest/gtest.h"
-
 #include "common/crypto.h"
 #include "common/utils.h"
 #include "common/vendor_defined_pub_key.h"
@@ -27,6 +25,8 @@
 #include "responder/responder.h"
 #include "testing/host_context.h"
 #include "testing/utils.h"
+
+#include "gtest/gtest.h"
 
 namespace {
 

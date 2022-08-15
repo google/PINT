@@ -15,10 +15,10 @@
 #include <ostream>
 #include <vector>
 
-#include "gtest/gtest.h"
-
 #include "common/messages.h"
 #include "everparse/SPDMWrapper.h"
+
+#include "gtest/gtest.h"
 
 namespace {
 

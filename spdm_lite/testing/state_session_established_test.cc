@@ -17,9 +17,8 @@
 #include <cstring>
 #include <vector>
 
-#include "gtest/gtest.h"
-
 #include "common/crypto.h"
+#include "common/crypto_types.h"
 #include "common/messages.h"
 #include "common/session_types.h"
 #include "common/utils.h"
@@ -29,6 +28,8 @@
 #include "testing/add_2_app.h"
 #include "testing/host_context.h"
 #include "testing/utils.h"
+
+#include "gtest/gtest.h"
 
 namespace {
 
@@ -69,7 +70,7 @@ TEST(SessionEstablished, AppTraffic) {
   SpdmAsymPubKey rsp_pub_key;
   SpdmResponderContext ctx;
   initialize_host_responder_context(&rsp_priv_key, &rsp_pub_key, &ctx,
-                                    Add2AppFn);
+                                    add_2_app_fn);
 
   SpdmAsymPrivKey req_priv_key;
   SpdmAsymPubKey req_pub_key;
@@ -140,21 +141,22 @@ TEST(SessionEstablished, AppTraffic) {
 
   uint16_t pub_key_size = spdm_get_asym_pub_key_size(req_pub_key.alg);
 
-  ASSERT_EQ(payload.size,
-            sizeof(SpdmSessionId) + pub_key_size + sizeof(req_num));
+  ASSERT_EQ(payload.size, sizeof(Add2AppResponse) + pub_key_size);
 
-  const uint8_t* rsp_session_id = payload.data;
-  const uint8_t* rsp_req_key = rsp_session_id + sizeof(SpdmSessionId);
-  const uint8_t* rsp_num = rsp_req_key + pub_key_size;
+  const auto* response = reinterpret_cast<const Add2AppResponse*>(payload.data);
 
-  EXPECT_EQ(0, memcmp(rsp_session_id, &ctx.session.params.session_id,
-                      sizeof(SpdmSessionId)));
-  EXPECT_EQ(0, memcmp(rsp_req_key, req_pub_key.data, pub_key_size));
+  EXPECT_EQ(response->num, req_num + 2);
+  EXPECT_EQ(0, memcmp(response->session_id.id, ctx.session.params.session_id.id,
+                      sizeof(response->session_id.id)));
+  EXPECT_EQ(0, memcmp(payload.data + sizeof(*response), req_pub_key.data,
+                      pub_key_size));
 
-  uint32_t result;
-  memcpy(&result, rsp_num, sizeof(result));
-
-  EXPECT_EQ(result, req_num + 2);
+  const SpdmNegotiatedAlgs* session_algs = &ctx.session.params.negotiated_algs;
+  EXPECT_EQ(response->asym_sign_alg, session_algs->asym_sign_alg);
+  EXPECT_EQ(response->asym_verify_alg, session_algs->asym_verify_alg);
+  EXPECT_EQ(response->hash_alg, session_algs->hash_alg);
+  EXPECT_EQ(response->dhe_alg, session_algs->dhe_alg);
+  EXPECT_EQ(response->aead_alg, session_algs->aead_alg);
 
   // Tear down session
   std::vector<uint8_t> end_session_msg = MakeEndSession();

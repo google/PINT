@@ -18,36 +18,39 @@
 
 #include "common/crypto_types.h"
 
-int Add2AppFn(const SpdmSessionId* session_id, const SpdmAsymPubKey* pub_key,
-              uint16_t standard_id, const uint8_t* vendor_id,
-              size_t vendor_id_size, const uint8_t* payload,
-              size_t payload_size, uint8_t* output, size_t* output_size) {
-  uint32_t number;
+int add_2_app_fn(const SpdmSessionId* session_id,
+                 const SpdmNegotiatedAlgs* negotiated_algs,
+                 const SpdmAsymPubKey* pub_key, uint16_t standard_id,
+                 const uint8_t* vendor_id, size_t vendor_id_size,
+                 const uint8_t* payload, size_t payload_size, uint8_t* output,
+                 size_t* output_size) {
+  Add2AppResponse rsp = {};
 
-  if (payload_size != sizeof(number)) {
+  if (payload_size != sizeof(rsp.num)) {
     return -1;
   }
 
-  memcpy(&number, payload, sizeof(number));
+  memcpy(&rsp.num, payload, sizeof(rsp.num));
 
-  number += 2;
+  rsp.num += 2;
 
-  uint16_t pub_key_size = spdm_get_asym_pub_key_size(pub_key->alg);
+  rsp.session_id = *session_id;
+  rsp.asym_sign_alg = negotiated_algs->asym_sign_alg;
+  rsp.asym_verify_alg = negotiated_algs->asym_verify_alg;
+  rsp.hash_alg = negotiated_algs->hash_alg;
+  rsp.dhe_alg = negotiated_algs->dhe_alg;
+  rsp.aead_alg = negotiated_algs->aead_alg;
 
-  const uint32_t rsp_size =
-      sizeof(*session_id) + pub_key_size + sizeof(number);
+  uint32_t rsp_size = sizeof(rsp) + pub_key->size;
   if (*output_size < rsp_size) {
     return -1;
   }
 
-  memcpy(output, session_id, sizeof(*session_id));
-  output += 4;
+  memcpy(output, &rsp, sizeof(rsp));
+  output += sizeof(rsp);
 
-  memcpy(output, pub_key->data, pub_key_size);
-  output += pub_key_size;
-
-  memcpy(output, &number, sizeof(number));
-  output += sizeof(number);
+  memcpy(output, pub_key->data, pub_key->size);
+  output += pub_key->size;
 
   *output_size = rsp_size;
 

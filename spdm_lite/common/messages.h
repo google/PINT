@@ -17,6 +17,8 @@
 
 #include <stdint.h>
 
+#include "common/defs.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
@@ -53,10 +55,6 @@ extern "C" {
 #define SPDM_ALG_TYPE_AEAD 3
 #define SPDM_ALG_TYPE_ASYM 4
 #define SPDM_ALG_TYPE_KEYSCHEDULE 5
-
-#ifndef PACKED
-#define PACKED __attribute__((__packed__))
-#endif
 
 typedef struct PACKED {
   uint8_t version;

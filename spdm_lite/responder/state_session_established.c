@@ -85,6 +85,7 @@ static int handle_vendor_defined_req(SpdmResponderContext* ctx, buffer input,
   size_t rsp_bytes_written = output->size - output->bytes_written;
 
   rc = ctx->app_dispatch_fn(&ctx->session.params.session_id,
+                            &ctx->session.params.negotiated_algs,
                             &ctx->session.params.peer_pub_key, standard_id,
                             vendor_id.data, vendor_id.size, payload.data,
                             payload.size, rsp_bytes, &rsp_bytes_written);

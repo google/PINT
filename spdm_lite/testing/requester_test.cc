@@ -16,13 +16,13 @@
 
 #include <vector>
 
-#include "gtest/gtest.h"
-
 #include "common/crypto_types.h"
 #include "crypto_impl/mbedtls_crypto.h"
 #include "responder/responder.h"
 #include "testing/add_2_app.h"
 #include "testing/host_context.h"
+
+#include "gtest/gtest.h"
 
 namespace {
 
@@ -31,7 +31,7 @@ TEST(SpdmRequester, EstablishSession) {
   SpdmAsymPubKey rsp_pub_key;
   SpdmResponderContext rsp_ctx;
   initialize_host_responder_context(&rsp_priv_key, &rsp_pub_key, &rsp_ctx,
-                                    Add2AppFn);
+                                    add_2_app_fn);
 
   SpdmAsymPrivKey req_priv_key;
   SpdmAsymPubKey req_pub_key;
@@ -47,8 +47,7 @@ TEST(SpdmRequester, EstablishSession) {
   uint16_t standard_id = 4;
   std::vector<uint8_t> vendor_id = {0x01, 0x02, 0x03, 0x04};
   uint32_t req_num = 1701;
-  std::vector<uint8_t> rsp(sizeof(SpdmSessionId) + req_pub_key_size +
-                           sizeof(uint32_t));
+  std::vector<uint8_t> rsp(sizeof(Add2AppResponse) + req_pub_key_size);
   size_t rsp_size = rsp.size();
 
   ASSERT_EQ(
@@ -58,18 +57,20 @@ TEST(SpdmRequester, EstablishSession) {
 
   ASSERT_EQ(rsp_size, rsp.size());
 
-  uint8_t* rsp_session_id = rsp.data();
-  uint8_t* rsp_req_key = rsp_session_id + sizeof(SpdmSessionId);
-  uint8_t* rsp_num = rsp_req_key + req_pub_key_size;
+  const auto* response = reinterpret_cast<const Add2AppResponse*>(rsp.data());
 
-  EXPECT_EQ(0,
-            memcmp(rsp_session_id, &session.session_id, sizeof(SpdmSessionId)));
-  EXPECT_EQ(0, memcmp(rsp_req_key, req_pub_key.data, req_pub_key_size));
+  EXPECT_EQ(response->num, req_num + 2);
+  EXPECT_EQ(0, memcmp(response->session_id.id, session.session_id.id,
+                      sizeof(response->session_id.id)));
+  EXPECT_EQ(0, memcmp(rsp.data() + sizeof(*response), req_pub_key.data,
+                      req_pub_key_size));
 
-  uint32_t result;
-  memcpy(&result, rsp_num, sizeof(result));
-
-  EXPECT_EQ(result, req_num + 2);
+  const SpdmNegotiatedAlgs* session_algs = &session.negotiated_algs;
+  EXPECT_EQ(response->asym_sign_alg, session_algs->asym_sign_alg);
+  EXPECT_EQ(response->asym_verify_alg, session_algs->asym_verify_alg);
+  EXPECT_EQ(response->hash_alg, session_algs->hash_alg);
+  EXPECT_EQ(response->dhe_alg, session_algs->dhe_alg);
+  EXPECT_EQ(response->aead_alg, session_algs->aead_alg);
 
   // Tear down session
   ASSERT_EQ(0, spdm_end_session(&req_ctx.dispatch_ctx, &session));
@@ -92,13 +93,8 @@ TEST(SpdmRequester, EstablishSession) {
 
   ASSERT_EQ(rsp_size, rsp.size());
 
-  rsp_session_id = rsp.data();
-  rsp_req_key = rsp_session_id + sizeof(SpdmSessionId);
-  rsp_num = rsp_req_key + req_pub_key_size;
-
-  memcpy(&result, rsp_num, sizeof(result));
-
-  EXPECT_EQ(result, req_num + 2);
+  response = reinterpret_cast<const Add2AppResponse*>(rsp.data());
+  EXPECT_EQ(response->num, req_num + 2);
 }
 
 }  // namespace
