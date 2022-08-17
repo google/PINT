@@ -112,9 +112,8 @@ typedef uint8_t BOOLEAN;
 #elif defined(__OpenBSD__)
 #include <endian.h>
 
-/* ... for Windows (GCC-like, e.g. mingw or clang) */
-#elif (defined(_WIN32) || defined(_WIN64)) &&                                  \
-    (defined(__GNUC__) || defined(__clang__))
+/* ... for GCC-like, e.g. mingw or clang */
+#elif (defined(__GNUC__) || defined(__clang__))
 
 #define htobe16(x) __builtin_bswap16(x)
 #define htole16(x) (x)
