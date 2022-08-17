@@ -235,7 +235,7 @@ int spdm_dispatch_secure_request(SpdmResponderContext* ctx, const uint8_t* req,
   }
 
   rc = spdm_decrypt_secure_message(
-      &ctx->crypto_spec, &ctx->session.params.session_id,
+      &ctx->crypto_spec, &ctx->session.params.info.session_id,
       ctx->session.params.req_seq_num, &keys.req_keys, &input);
   if (rc != 0) {
     goto cleanup;
@@ -264,7 +264,7 @@ int spdm_dispatch_secure_request(SpdmResponderContext* ctx, const uint8_t* req,
                      output.bytes_written - sizeof(SPDM_SecuredMessageRecord)};
 
   rc = spdm_encrypt_secure_message(
-      &ctx->crypto_spec, &ctx->session.params.session_id,
+      &ctx->crypto_spec, &ctx->session.params.info.session_id,
       ctx->session.params.rsp_seq_num, &keys.rsp_keys, record_header, response,
       &output);
   if (rc != 0) {

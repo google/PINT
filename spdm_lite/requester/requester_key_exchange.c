@@ -240,7 +240,7 @@ static int handle_key_exchange_rsp(const SpdmNegotiatedAlgs* negotiated_algs,
     return rc;
   }
 
-  rc = spdm_verify(crypto_spec, &session->peer_pub_key,
+  rc = spdm_verify(crypto_spec, &session->info.peer_pub_key,
                    /*signer_role=*/SPDM_RESPONDER, &transcript_digest,
                    /*context=*/"key_exchange_rsp signing", signature, sig_size);
   if (rc != 0) {
@@ -267,7 +267,7 @@ static int handle_key_exchange_rsp(const SpdmNegotiatedAlgs* negotiated_algs,
 
   spdm_generate_session_id(
       /*my_role=*/SPDM_REQUESTER, my_params->my_session_id_part, rsp_session_id,
-      &session->session_id);
+      &session->info.session_id);
 
   rc = spdm_gen_dhe_secret(crypto_spec, &my_params->my_priv_key,
                            &peer_ecdh_pub_key, &session->shared_key);
@@ -283,7 +283,7 @@ int spdm_key_exchange(SpdmRequesterContext* ctx, SpdmSessionParams* session,
   SpdmSelfKeyExchangeParams my_params;
 
   int rc = spdm_generate_session_params(&ctx->dispatch_ctx.crypto_spec,
-                                        session->negotiated_algs.dhe_alg,
+                                        session->info.negotiated_algs.dhe_alg,
                                         &my_params);
   if (rc != 0) {
     goto cleanup;
@@ -301,14 +301,15 @@ int spdm_key_exchange(SpdmRequesterContext* ctx, SpdmSessionParams* session,
   buffer rsp;
 
   rc = spdm_initialize_transcript_hash(
-      &ctx->dispatch_ctx.crypto_spec, session->negotiated_algs.hash_alg,
+      &ctx->dispatch_ctx.crypto_spec, session->info.negotiated_algs.hash_alg,
       &ctx->negotiation_transcript, transcript_hash);
   if (rc != 0) {
     return rc;
   }
 
   rc = spdm_extend_hash_with_pub_key(&ctx->dispatch_ctx.crypto_spec,
-                                     transcript_hash, &session->peer_pub_key);
+                                     transcript_hash,
+                                     &session->info.peer_pub_key);
   if (rc != 0) {
     return rc;
   }
@@ -321,7 +322,7 @@ int spdm_key_exchange(SpdmRequesterContext* ctx, SpdmSessionParams* session,
     goto cleanup;
   }
 
-  rc = handle_key_exchange_rsp(&session->negotiated_algs,
+  rc = handle_key_exchange_rsp(&session->info.negotiated_algs,
                                &ctx->dispatch_ctx.crypto_spec, rsp,
                                transcript_hash, &my_params, session);
   if (rc != 0) {

@@ -146,12 +146,14 @@ TEST(SessionEstablished, AppTraffic) {
   const auto* response = reinterpret_cast<const Add2AppResponse*>(payload.data);
 
   EXPECT_EQ(response->num, req_num + 2);
-  EXPECT_EQ(0, memcmp(response->session_id.id, ctx.session.params.session_id.id,
-                      sizeof(response->session_id.id)));
+  EXPECT_EQ(
+      0, memcmp(response->session_id.id, ctx.session.params.info.session_id.id,
+                sizeof(response->session_id.id)));
   EXPECT_EQ(0, memcmp(payload.data + sizeof(*response), req_pub_key.data,
                       pub_key_size));
 
-  const SpdmNegotiatedAlgs* session_algs = &ctx.session.params.negotiated_algs;
+  const SpdmNegotiatedAlgs* session_algs =
+      &ctx.session.params.info.negotiated_algs;
   EXPECT_EQ(response->asym_sign_alg, session_algs->asym_sign_alg);
   EXPECT_EQ(response->asym_verify_alg, session_algs->asym_verify_alg);
   EXPECT_EQ(response->hash_alg, session_algs->hash_alg);

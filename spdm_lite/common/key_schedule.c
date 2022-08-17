@@ -229,9 +229,9 @@ int spdm_generate_message_secrets(const SpdmCryptoSpec* crypto_spec,
     return -1;
   }
 
-  int rc =
-      derive_handshake_secret(crypto_spec, session->negotiated_algs.hash_alg,
-                              &session->shared_key, &secret);
+  int rc = derive_handshake_secret(crypto_spec,
+                                   session->info.negotiated_algs.hash_alg,
+                                   &session->shared_key, &secret);
   if (rc != 0) {
     goto cleanup;
   }

@@ -184,7 +184,7 @@ int spdm_negotiate_algorithms(SpdmRequesterContext* ctx,
   }
 
   spdm_get_negotiated_algs(&my_algs, &their_algs, &common_algs,
-                           &session->negotiated_algs);
+                           &session->info.negotiated_algs);
 
-  return check_negotiated_algs(&session->negotiated_algs);
+  return check_negotiated_algs(&session->info.negotiated_algs);
 }

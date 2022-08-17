@@ -36,9 +36,7 @@ typedef struct {
 
 // App that echoes back the session ID, negotiated algs, and public key, as well
 // as the given uint32 double-incremented.
-int add_2_app_fn(const SpdmSessionId* session_id,
-                 const SpdmNegotiatedAlgs* negotiated_algs,
-                 const SpdmAsymPubKey* pub_key, uint16_t standard_id,
+int add_2_app_fn(const SpdmSessionInfo* session_info, uint16_t standard_id,
                  const uint8_t* vendor_id, size_t vendor_id_size,
                  const uint8_t* payload, size_t payload_size, uint8_t* output,
                  size_t* output_size);

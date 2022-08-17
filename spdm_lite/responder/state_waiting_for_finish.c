@@ -90,7 +90,7 @@ static int write_finish_rsp(const SpdmCryptoSpec* crypto_spec,
   msg.preamble.request_response_code = SPDM_CODE_FINISH_RSP;
 
   const uint16_t hmac_size =
-      spdm_get_hash_size(session->negotiated_algs.hash_alg);
+      spdm_get_hash_size(session->info.negotiated_algs.hash_alg);
 
   const uint32_t out_len = sizeof(msg) + hmac_size;
 
@@ -159,7 +159,7 @@ int spdm_dispatch_request_waiting_for_finish(SpdmResponderContext* ctx,
   SpdmHash transcript_hash = ctx->session.transcript_hash;
 
   rc = spdm_extend_hash_with_pub_key(&ctx->crypto_spec, &transcript_hash,
-                                     &ctx->session.params.peer_pub_key);
+                                     &ctx->session.params.info.peer_pub_key);
   if (rc != 0) {
     return rc;
   }
@@ -172,7 +172,7 @@ int spdm_dispatch_request_waiting_for_finish(SpdmResponderContext* ctx,
     return rc;
   }
 
-  rc = spdm_verify(&ctx->crypto_spec, &ctx->session.params.peer_pub_key,
+  rc = spdm_verify(&ctx->crypto_spec, &ctx->session.params.info.peer_pub_key,
                    /*signer_role=*/SPDM_REQUESTER, &transcript_hash_result,
                    /*context=*/"finish signing", sig, sig_len);
   if (rc != 0) {

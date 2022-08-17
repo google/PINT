@@ -136,7 +136,8 @@ int DispatchSecureRequest(SpdmResponderContext* ctx, SpdmSessionPhase phase,
 
   buffer response = {output.data(), (uint32_t)output_size};
 
-  rc = spdm_decrypt_secure_message(&ctx->crypto_spec, &rsp_session.session_id,
+  rc = spdm_decrypt_secure_message(&ctx->crypto_spec,
+                                   &rsp_session.info.session_id,
                                    rsp_session.rsp_seq_num, &keys, &response);
   if (rc != 0) {
     std::cerr << "spdm_decrypt_secure_message failed: " << rc << std::endl;
@@ -464,7 +465,7 @@ std::vector<uint8_t> MakeFinish(SpdmHash* transcript_hash,
   memcopy(hmac, hmac_result.data, hmac_result.size);
 
   spdm_extend_hash(transcript_hash, reinterpret_cast<const uint8_t*>(hmac),
-                   spdm_get_hash_size(session.negotiated_algs.hash_alg));
+                   spdm_get_hash_size(session.info.negotiated_algs.hash_alg));
 
   return msg;
 }
@@ -539,9 +540,9 @@ int EncryptMessage(const std::vector<uint8_t>& message,
   buffer message_buf = {output->data() + sizeof(SPDM_SecuredMessageRecord),
                         static_cast<uint32_t>(message.size())};
 
-  rc = spdm_encrypt_secure_message(&MBEDTLS_CRYPTO_SPEC, &session.session_id,
-                                   seq_num, &keys, output->data(), message_buf,
-                                   &footer_writer);
+  rc = spdm_encrypt_secure_message(&MBEDTLS_CRYPTO_SPEC,
+                                   &session.info.session_id, seq_num, &keys,
+                                   output->data(), message_buf, &footer_writer);
   if (rc != 0) {
     std::cerr << "GetSecureMessageKeys failed: " << rc << std::endl;
     return rc;

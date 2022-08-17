@@ -305,7 +305,8 @@ static int hmac_key_exchange_msg(const SpdmCryptoSpec* crypto_spec,
     goto cleanup;
   }
 
-  uint16_t hmac_size = spdm_get_hash_size(session->negotiated_algs.hash_alg);
+  uint16_t hmac_size =
+      spdm_get_hash_size(session->info.negotiated_algs.hash_alg);
   uint8_t* out = reserve_from_writer(output, hmac_size);
   if (out == NULL) {
     rc = -1;
@@ -372,9 +373,9 @@ static int handle_key_exchange(SpdmResponderContext* ctx, buffer input,
 
   spdm_generate_session_id(
       /*my_role=*/SPDM_RESPONDER, my_params.my_session_id_part, req_session_id,
-      &ctx->session.params.session_id);
+      &ctx->session.params.info.session_id);
 
-  ctx->session.params.negotiated_algs = ctx->negotiated_algs;
+  ctx->session.params.info.negotiated_algs = ctx->negotiated_algs;
 
   rc = spdm_gen_dhe_secret(&ctx->crypto_spec, &my_params.my_priv_key,
                            &their_pub_key, &ctx->session.params.shared_key);

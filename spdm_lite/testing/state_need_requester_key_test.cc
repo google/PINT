@@ -111,10 +111,11 @@ TEST(NeedRequesterKey, GetRequesterKey) {
   ASSERT_EQ(ack_request_id, req_id);
 
   ASSERT_EQ(ctx.session.pending_pub_key_req_id, 0);
-  ASSERT_EQ(ctx.session.params.peer_pub_key.alg, req_pub_key.alg);
+  ASSERT_EQ(ctx.session.params.info.peer_pub_key.alg, req_pub_key.alg);
 
-  ASSERT_EQ(0, memcmp(ctx.session.params.peer_pub_key.data, req_pub_key.data,
-                      ctx.session.params.peer_pub_key.size));
+  ASSERT_EQ(0,
+            memcmp(ctx.session.params.info.peer_pub_key.data, req_pub_key.data,
+                   ctx.session.params.info.peer_pub_key.size));
   ASSERT_EQ(ctx.state, STATE_MUTUAL_AUTH_WAITING_FOR_FINISH);
 }
 

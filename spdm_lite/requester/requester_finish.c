@@ -85,9 +85,9 @@ static int write_finish(SpdmRequesterContext* ctx,
   SPDM_FINISH msg = {};
 
   const uint16_t sig_size =
-      spdm_get_asym_signature_size(session->negotiated_algs.asym_sign_alg);
+      spdm_get_asym_signature_size(session->info.negotiated_algs.asym_sign_alg);
   const uint16_t hmac_size =
-      spdm_get_hash_size(session->negotiated_algs.hash_alg);
+      spdm_get_hash_size(session->info.negotiated_algs.hash_alg);
 
   const uint32_t msg_len = sizeof(msg) + sig_size + hmac_size;
 
@@ -112,7 +112,7 @@ static int write_finish(SpdmRequesterContext* ctx,
   }
 
   rc = spdm_sign(&ctx->dispatch_ctx.crypto_spec,
-                 session->negotiated_algs.asym_sign_alg,
+                 session->info.negotiated_algs.asym_sign_alg,
                  ctx->requester_priv_key_ctx,
                  /*my_role=*/SPDM_REQUESTER, &transcript_digest,
                  /*context=*/"finish signing", out, sig_size);
@@ -142,7 +142,8 @@ static int verify_finish_rsp(SpdmRequesterContext* ctx,
   SpdmHashResult transcript_digest;
   const uint8_t* responder_verify_data;
 
-  uint16_t hash_len = spdm_get_hash_size(session->negotiated_algs.hash_alg);
+  uint16_t hash_len =
+      spdm_get_hash_size(session->info.negotiated_algs.hash_alg);
 
   int rc = SpdmCheckFinishRsp(&rsp, /*rest=*/NULL, hash_len,
                               /*responder_verify_data_expected=*/true,

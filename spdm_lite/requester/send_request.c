@@ -34,8 +34,9 @@ static int generate_session_keys(const SpdmCryptoSpec* crypto_spec,
     goto cleanup;
   }
 
-  rc = spdm_generate_aead_keys(crypto_spec, session->negotiated_algs.aead_alg,
-                               &secrets, req_seq_num, rsp_seq_num, keys);
+  rc = spdm_generate_aead_keys(crypto_spec,
+                               session->info.negotiated_algs.aead_alg, &secrets,
+                               req_seq_num, rsp_seq_num, keys);
   if (rc != 0) {
     goto cleanup;
   }
@@ -72,9 +73,9 @@ int spdm_send_secure_request(const SpdmDispatchRequestCtx* dispatch_ctx,
 
   buffer msg_buf = {plaintext_start, req.size};
 
-  rc = spdm_encrypt_secure_message(&dispatch_ctx->crypto_spec,
-                                   &session->session_id, session->req_seq_num,
-                                   &keys.req_keys, header, msg_buf, &footer);
+  rc = spdm_encrypt_secure_message(
+      &dispatch_ctx->crypto_spec, &session->info.session_id,
+      session->req_seq_num, &keys.req_keys, header, msg_buf, &footer);
   if (rc != 0) {
     goto cleanup;
   }
@@ -93,8 +94,8 @@ int spdm_send_secure_request(const SpdmDispatchRequestCtx* dispatch_ctx,
   }
 
   rc = spdm_decrypt_secure_message(&dispatch_ctx->crypto_spec,
-                                   &session->session_id, session->rsp_seq_num,
-                                   &keys.rsp_keys, rsp);
+                                   &session->info.session_id,
+                                   session->rsp_seq_num, &keys.rsp_keys, rsp);
   if (rc != 0) {
     goto cleanup;
   }

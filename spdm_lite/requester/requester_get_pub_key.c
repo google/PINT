@@ -92,7 +92,7 @@ int spdm_get_pub_key(SpdmRequesterContext* ctx, SpdmSessionParams* session) {
   }
 
   uint16_t pub_key_size =
-      spdm_get_asym_pub_key_size(session->negotiated_algs.asym_verify_alg);
+      spdm_get_asym_pub_key_size(session->info.negotiated_algs.asym_verify_alg);
 
   if (payload.size != sizeof(SPDM_VendorDefinedPubKeyRsp) + pub_key_size) {
     return -1;
@@ -108,7 +108,7 @@ int spdm_get_pub_key(SpdmRequesterContext* ctx, SpdmSessionParams* session) {
 
   SpdmAsymPubKey pub_key_in_response;
   spdm_init_asym_pub_key(&pub_key_in_response,
-                         session->negotiated_algs.asym_verify_alg);
+                         session->info.negotiated_algs.asym_verify_alg);
 
   consume_from_buffer(&payload, pub_key_in_response.data, pub_key_size);
 
@@ -118,7 +118,7 @@ int spdm_get_pub_key(SpdmRequesterContext* ctx, SpdmSessionParams* session) {
     return rc;
   }
 
-  session->peer_pub_key = pub_key_in_response;
+  session->info.peer_pub_key = pub_key_in_response;
 
   return 0;
 }

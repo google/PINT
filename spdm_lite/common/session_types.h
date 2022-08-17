@@ -38,6 +38,10 @@ typedef struct {
   SpdmSessionId session_id;
   SpdmNegotiatedAlgs negotiated_algs;
   SpdmAsymPubKey peer_pub_key;
+} SpdmSessionInfo;
+
+typedef struct {
+  SpdmSessionInfo info;
   SpdmDheSecret shared_key;
   SpdmHashResult th_1;
   SpdmHashResult th_2;

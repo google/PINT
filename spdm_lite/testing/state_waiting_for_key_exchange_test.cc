@@ -182,21 +182,22 @@ TEST(WaitingForKeyExchange, KeyExchange) {
   memcpy(peer_pub_key.data, rsp_exchange_data, peer_pub_key.size);
 
   SpdmSessionParams session = {};
-  session.negotiated_algs.hash_alg = SPDM_HASH_SHA512;
-  session.negotiated_algs.asym_sign_alg = SPDM_ASYM_ECDSA_ECC_NIST_P256;
-  session.negotiated_algs.asym_verify_alg = SPDM_ASYM_ECDSA_ECC_NIST_P256;
+  session.info.negotiated_algs.hash_alg = SPDM_HASH_SHA512;
+  session.info.negotiated_algs.asym_sign_alg = SPDM_ASYM_ECDSA_ECC_NIST_P256;
+  session.info.negotiated_algs.asym_verify_alg = SPDM_ASYM_ECDSA_ECC_NIST_P256;
 
   spdm_generate_session_id(
       /*my_role=*/SPDM_REQUESTER, req_session_id, rsp_session_id,
-      &session.session_id);
+      &session.info.session_id);
 
   ASSERT_EQ(0, spdm_gen_dhe_secret(&ctx.crypto_spec, &req_priv_key,
                                    &peer_pub_key, &session.shared_key));
 
   session.th_1 = ctx.session.params.th_1;  // Already verified.
 
-  ASSERT_EQ(0, memcmp(&session.session_id, &ctx.session.params.session_id,
-                      sizeof(session.session_id)));
+  ASSERT_EQ(
+      0, memcmp(&session.info.session_id, &ctx.session.params.info.session_id,
+                sizeof(session.info.session_id)));
 
   ASSERT_EQ(0,
             memcmp(session.shared_key.data, ctx.session.params.shared_key.data,

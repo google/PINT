@@ -18,9 +18,7 @@
 
 #include "common/crypto_types.h"
 
-int add_2_app_fn(const SpdmSessionId* session_id,
-                 const SpdmNegotiatedAlgs* negotiated_algs,
-                 const SpdmAsymPubKey* pub_key, uint16_t standard_id,
+int add_2_app_fn(const SpdmSessionInfo* session_info, uint16_t standard_id,
                  const uint8_t* vendor_id, size_t vendor_id_size,
                  const uint8_t* payload, size_t payload_size, uint8_t* output,
                  size_t* output_size) {
@@ -34,14 +32,14 @@ int add_2_app_fn(const SpdmSessionId* session_id,
 
   rsp.num += 2;
 
-  rsp.session_id = *session_id;
-  rsp.asym_sign_alg = negotiated_algs->asym_sign_alg;
-  rsp.asym_verify_alg = negotiated_algs->asym_verify_alg;
-  rsp.hash_alg = negotiated_algs->hash_alg;
-  rsp.dhe_alg = negotiated_algs->dhe_alg;
-  rsp.aead_alg = negotiated_algs->aead_alg;
+  rsp.session_id = session_info->session_id;
+  rsp.asym_sign_alg = session_info->negotiated_algs.asym_sign_alg;
+  rsp.asym_verify_alg = session_info->negotiated_algs.asym_verify_alg;
+  rsp.hash_alg = session_info->negotiated_algs.hash_alg;
+  rsp.dhe_alg = session_info->negotiated_algs.dhe_alg;
+  rsp.aead_alg = session_info->negotiated_algs.aead_alg;
 
-  uint32_t rsp_size = sizeof(rsp) + pub_key->size;
+  uint32_t rsp_size = sizeof(rsp) + session_info->peer_pub_key.size;
   if (*output_size < rsp_size) {
     return -1;
   }
@@ -49,8 +47,9 @@ int add_2_app_fn(const SpdmSessionId* session_id,
   memcpy(output, &rsp, sizeof(rsp));
   output += sizeof(rsp);
 
-  memcpy(output, pub_key->data, pub_key->size);
-  output += pub_key->size;
+  memcpy(output, session_info->peer_pub_key.data,
+         session_info->peer_pub_key.size);
+  output += session_info->peer_pub_key.size;
 
   *output_size = rsp_size;
 

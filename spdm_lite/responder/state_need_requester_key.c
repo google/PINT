@@ -161,7 +161,7 @@ static int handle_deliver_encapsulated_response(SpdmResponderContext* ctx,
   }
 
   ctx->session.pending_pub_key_req_id = 0;
-  ctx->session.params.peer_pub_key = req_pub_key;
+  ctx->session.params.info.peer_pub_key = req_pub_key;
 
   ctx->state = STATE_MUTUAL_AUTH_WAITING_FOR_FINISH;
   return 0;
