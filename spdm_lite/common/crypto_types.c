@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "common/crypto_types.h"
+#include "spdm_lite/common/crypto_types.h"
 
 void spdm_init_asym_pub_key(SpdmAsymPubKey* key, SpdmAsymAlgorithm alg) {
   key->alg = alg;

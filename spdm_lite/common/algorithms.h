@@ -17,9 +17,9 @@
 
 #include <stdbool.h>
 
-#include "common/crypto_types.h"
-#include "common/messages.h"
-#include "common/utils.h"
+#include "spdm_lite/common/crypto_types.h"
+#include "spdm_lite/common/messages.h"
+#include "spdm_lite/common/utils.h"
 
 #ifdef __cplusplus
 extern "C" {

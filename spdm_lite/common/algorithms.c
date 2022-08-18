@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "common/algorithms.h"
+#include "spdm_lite/common/algorithms.h"
 
 #include <string.h>
 
-#include "everparse/SPDMWrapper.h"
+#include "spdm_lite/everparse/SPDMWrapper.h"
 
 static void get_base_alg_support(const SPDM_AsymHashAlgs* asym_hash_algs,
                                  bool is_resp,

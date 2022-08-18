@@ -12,19 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "responder/responder.h"
+#include "spdm_lite/responder/responder.h"
 
 #include <stdbool.h>
 #include <string.h>
 
-#include "common/crypto.h"
-#include "common/error.h"
-#include "common/key_schedule.h"
-#include "common/messages.h"
-#include "common/session.h"
-#include "common/session_types.h"
-#include "common/utils.h"
-#include "common/version.h"
+#include "spdm_lite/common/crypto.h"
+#include "spdm_lite/common/error.h"
+#include "spdm_lite/common/key_schedule.h"
+#include "spdm_lite/common/messages.h"
+#include "spdm_lite/common/session.h"
+#include "spdm_lite/common/session_types.h"
+#include "spdm_lite/common/utils.h"
+#include "spdm_lite/common/version.h"
 
 // State-specific message handlers.
 

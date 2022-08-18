@@ -14,7 +14,7 @@
 
 #include <string.h>
 
-#include "common/crypto_types.h"
+#include "spdm_lite/common/crypto_types.h"
 
 static int NonRandom(uint8_t* data, uint32_t len) {
   for (int i = 0; i < len; ++i) {

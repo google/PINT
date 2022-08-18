@@ -15,10 +15,10 @@
 #ifndef SPDM_LITE_TESTING_HOST_CONTEXT_H_
 #define SPDM_LITE_TESTING_HOST_CONTEXT_H_
 
-#include "common/crypto_types.h"
-#include "crypto_impl/mbedtls_crypto.h"
-#include "requester/requester.h"
-#include "responder/responder.h"
+#include "spdm_lite/common/crypto_types.h"
+#include "spdm_lite/crypto_impl/mbedtls_crypto.h"
+#include "spdm_lite/requester/requester.h"
+#include "spdm_lite/responder/responder.h"
 
 #ifdef __cplusplus
 extern "C" {

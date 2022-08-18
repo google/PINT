@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "common/error.h"
+#include "spdm_lite/common/error.h"
 
-#include "common/messages.h"
-#include "common/utils.h"
-#include "common/version.h"
+#include "spdm_lite/common/messages.h"
+#include "spdm_lite/common/utils.h"
+#include "spdm_lite/common/version.h"
 
 int spdm_write_error(uint8_t code, byte_writer* output) {
   SDPM_ERROR err_msg = {};

@@ -18,11 +18,11 @@
 #include <type_traits>
 #include <vector>
 
-#include "common/crypto_types.h"
-#include "common/session_types.h"
-#include "common/utils.h"
-#include "crypto_impl/mbedtls_crypto.h"
-#include "responder/responder.h"
+#include "spdm_lite/common/crypto_types.h"
+#include "spdm_lite/common/session_types.h"
+#include "spdm_lite/common/utils.h"
+#include "spdm_lite/crypto_impl/mbedtls_crypto.h"
+#include "spdm_lite/responder/responder.h"
 
 void ExtendHash(SpdmHash* hash, const std::vector<uint8_t>& b);
 std::vector<uint8_t> GetDigest(const uint8_t* data, uint32_t len);

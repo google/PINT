@@ -19,7 +19,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "common/crypto_types.h"
+#include "spdm_lite/common/crypto_types.h"
 
 #ifdef __cplusplus
 extern "C" {

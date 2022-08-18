@@ -17,16 +17,16 @@
 #include <cstring>
 #include <vector>
 
-#include "common/crypto.h"
-#include "common/key_schedule.h"
-#include "common/messages.h"
-#include "common/session_types.h"
-#include "common/utils.h"
-#include "crypto_impl/mbedtls_crypto.h"
-#include "everparse/SPDMWrapper.h"
-#include "responder/responder.h"
-#include "testing/host_context.h"
-#include "testing/utils.h"
+#include "spdm_lite/common/crypto.h"
+#include "spdm_lite/common/key_schedule.h"
+#include "spdm_lite/common/messages.h"
+#include "spdm_lite/common/session_types.h"
+#include "spdm_lite/common/utils.h"
+#include "spdm_lite/crypto_impl/mbedtls_crypto.h"
+#include "spdm_lite/everparse/SPDMWrapper.h"
+#include "spdm_lite/responder/responder.h"
+#include "spdm_lite/testing/host_context.h"
+#include "spdm_lite/testing/utils.h"
 
 #include "gtest/gtest.h"
 

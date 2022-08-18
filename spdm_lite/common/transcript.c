@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "common/transcript.h"
+#include "spdm_lite/common/transcript.h"
 
 #include <string.h>
 
-#include "common/crypto.h"
+#include "spdm_lite/common/crypto.h"
 
 int spdm_append_to_transcript(SpdmNegotiationTranscript* transcript,
                               const void* data, uint32_t size) {

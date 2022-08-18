@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "common/key_schedule.h"
+#include "spdm_lite/common/key_schedule.h"
 
 #include <string.h>
 
-#include "common/crypto.h"
-#include "common/crypto_types.h"
-#include "common/session_types.h"
-#include "common/version.h"
+#include "spdm_lite/common/crypto.h"
+#include "spdm_lite/common/crypto_types.h"
+#include "spdm_lite/common/session_types.h"
+#include "spdm_lite/common/version.h"
 
 #define BINCONCAT_MAX_LABEL_LEN 12
 #define BINCONCAT_BUF_LEN (2 + 8 + BINCONCAT_MAX_LABEL_LEN + SHA512_DIGEST_SIZE)

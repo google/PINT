@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "requester/send_request.h"
+#include "spdm_lite/requester/send_request.h"
 
 #include <string.h>
 
-#include "common/key_schedule.h"
-#include "common/messages.h"
-#include "common/session.h"
-#include "common/utils.h"
-#include "requester/requester.h"
+#include "spdm_lite/common/key_schedule.h"
+#include "spdm_lite/common/messages.h"
+#include "spdm_lite/common/session.h"
+#include "spdm_lite/common/utils.h"
+#include "spdm_lite/requester/requester.h"
 
 static int generate_session_keys(const SpdmCryptoSpec* crypto_spec,
                                  SpdmSessionParams* session,

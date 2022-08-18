@@ -15,9 +15,9 @@
 #ifndef SPDM_LITE_TESTING_ADD_2_APP_H_
 #define SPDM_LITE_TESTING_ADD_2_APP_H_
 
-#include "common/crypto_types.h"
-#include "common/defs.h"
-#include "common/session_types.h"
+#include "spdm_lite/common/crypto_types.h"
+#include "spdm_lite/common/defs.h"
+#include "spdm_lite/common/session_types.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "testing/add_2_app.h"
+#include "spdm_lite/testing/add_2_app.h"
 
 #include <string.h>
 
-#include "common/crypto_types.h"
+#include "spdm_lite/common/crypto_types.h"
 
 int add_2_app_fn(const SpdmSessionInfo* session_info, uint16_t standard_id,
                  const uint8_t* vendor_id, size_t vendor_id_size,

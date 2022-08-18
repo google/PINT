@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "everparse/SPDMWrapper.h"
+#include "spdm_lite/everparse/SPDMWrapper.h"
 
-#include "everparse/EverParse.h"
-#include "everparse/SPDM.h"
+#include "spdm_lite/everparse/EverParse.h"
+#include "spdm_lite/everparse/SPDM.h"
 
 #if (defined(_WIN32) || defined(_WIN64)) && \
     (defined(__GNUC__) || defined(__clang__))

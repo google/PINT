@@ -17,8 +17,8 @@
 
 #include <stdint.h>
 
-#include "common/crypto_types.h"
-#include "common/messages.h"
+#include "spdm_lite/common/crypto_types.h"
+#include "spdm_lite/common/messages.h"
 
 #define SPDM_MAX_VERSION_NUMBER_ENTRIES 16
 

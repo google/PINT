@@ -17,18 +17,18 @@
 #include <cstring>
 #include <vector>
 
-#include "common/crypto.h"
-#include "common/crypto_types.h"
-#include "common/key_schedule.h"
-#include "common/session.h"
-#include "common/sign.h"
-#include "common/utils.h"
-#include "common/vendor_defined_pub_key.h"
-#include "crypto_impl/mbedtls_crypto.h"
-#include "everparse/SPDMWrapper.h"
-#include "responder/responder.h"
-#include "testing/host_context.h"
-#include "testing/utils.h"
+#include "spdm_lite/common/crypto.h"
+#include "spdm_lite/common/crypto_types.h"
+#include "spdm_lite/common/key_schedule.h"
+#include "spdm_lite/common/session.h"
+#include "spdm_lite/common/sign.h"
+#include "spdm_lite/common/utils.h"
+#include "spdm_lite/common/vendor_defined_pub_key.h"
+#include "spdm_lite/crypto_impl/mbedtls_crypto.h"
+#include "spdm_lite/everparse/SPDMWrapper.h"
+#include "spdm_lite/responder/responder.h"
+#include "spdm_lite/testing/host_context.h"
+#include "spdm_lite/testing/utils.h"
 
 #include "gtest/gtest.h"
 

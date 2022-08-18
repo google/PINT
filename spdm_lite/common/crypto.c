@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "common/crypto.h"
+#include "spdm_lite/common/crypto.h"
 
-#include "common/crypto_types.h"
+#include "spdm_lite/common/crypto_types.h"
 
 int spdm_get_random(const SpdmCryptoSpec* spec, uint8_t* data, uint32_t len) {
   return spec->get_random(data, len);

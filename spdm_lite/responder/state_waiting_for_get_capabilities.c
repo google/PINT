@@ -14,13 +14,13 @@
 
 #include <string.h>
 
-#include "common/error.h"
-#include "common/messages.h"
-#include "common/transcript.h"
-#include "common/utils.h"
-#include "common/version.h"
-#include "everparse/SPDMWrapper.h"
-#include "responder/responder.h"
+#include "spdm_lite/common/error.h"
+#include "spdm_lite/common/messages.h"
+#include "spdm_lite/common/transcript.h"
+#include "spdm_lite/common/utils.h"
+#include "spdm_lite/common/version.h"
+#include "spdm_lite/everparse/SPDMWrapper.h"
+#include "spdm_lite/responder/responder.h"
 
 static int write_capabilities(SpdmResponderContext* ctx,
                               byte_writer* output) {

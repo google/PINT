@@ -14,12 +14,12 @@
 
 #include <string.h>
 
-#include "common/messages.h"
-#include "common/transcript.h"
-#include "common/version.h"
-#include "everparse/SPDMWrapper.h"
-#include "requester/requester.h"
-#include "requester/send_request.h"
+#include "spdm_lite/common/messages.h"
+#include "spdm_lite/common/transcript.h"
+#include "spdm_lite/common/version.h"
+#include "spdm_lite/everparse/SPDMWrapper.h"
+#include "spdm_lite/requester/requester.h"
+#include "spdm_lite/requester/send_request.h"
 
 static int check_version(uint8_t entry_count, const uint8_t* entries) {
   for (int i = 0; i < entry_count; ++i) {

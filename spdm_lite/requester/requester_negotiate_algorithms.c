@@ -14,16 +14,16 @@
 
 #include <string.h>
 
-#include "common/algorithms.h"
-#include "common/crypto_types.h"
-#include "common/messages.h"
-#include "common/session_types.h"
-#include "common/transcript.h"
-#include "common/utils.h"
-#include "common/version.h"
-#include "everparse/SPDMWrapper.h"
-#include "requester/requester.h"
-#include "requester/send_request.h"
+#include "spdm_lite/common/algorithms.h"
+#include "spdm_lite/common/crypto_types.h"
+#include "spdm_lite/common/messages.h"
+#include "spdm_lite/common/session_types.h"
+#include "spdm_lite/common/transcript.h"
+#include "spdm_lite/common/utils.h"
+#include "spdm_lite/common/version.h"
+#include "spdm_lite/everparse/SPDMWrapper.h"
+#include "spdm_lite/requester/requester.h"
+#include "spdm_lite/requester/send_request.h"
 
 static int write_negotiate_algorithms(SpdmSupportedAlgs* supported_algs,
                                       byte_writer* output) {

@@ -15,8 +15,8 @@
 #include <ostream>
 #include <vector>
 
-#include "common/messages.h"
-#include "everparse/SPDMWrapper.h"
+#include "spdm_lite/common/messages.h"
+#include "spdm_lite/everparse/SPDMWrapper.h"
 
 #include "gtest/gtest.h"
 

@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "requester/requester.h"
+#include "spdm_lite/requester/requester.h"
 
 #include <vector>
 
-#include "common/crypto_types.h"
-#include "crypto_impl/mbedtls_crypto.h"
-#include "responder/responder.h"
-#include "testing/add_2_app.h"
-#include "testing/host_context.h"
+#include "spdm_lite/common/crypto_types.h"
+#include "spdm_lite/crypto_impl/mbedtls_crypto.h"
+#include "spdm_lite/responder/responder.h"
+#include "spdm_lite/testing/add_2_app.h"
+#include "spdm_lite/testing/host_context.h"
 
 #include "gtest/gtest.h"
 

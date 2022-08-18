@@ -17,8 +17,8 @@
 
 #include <stdint.h>
 
-#include "common/crypto_types.h"
-#include "common/utils.h"
+#include "spdm_lite/common/crypto_types.h"
+#include "spdm_lite/common/utils.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "testing/host_context.h"
+#include "spdm_lite/testing/host_context.h"
 
 #include <assert.h>
 #include <stdlib.h>
 
-#include "crypto_impl/mbedtls_crypto.h"
-#include "requester/requester.h"
-#include "responder/responder.h"
+#include "spdm_lite/crypto_impl/mbedtls_crypto.h"
+#include "spdm_lite/requester/requester.h"
+#include "spdm_lite/responder/responder.h"
 
 #define SCRATCH_SIZE 1024
 

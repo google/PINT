@@ -17,7 +17,7 @@
 
 #include <stdint.h>
 
-#include "common/defs.h"
+#include "spdm_lite/common/defs.h"
 
 #ifdef __cplusplus
 extern "C" {

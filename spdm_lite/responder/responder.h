@@ -17,10 +17,10 @@
 
 #include <stddef.h>
 
-#include "common/capabilities.h"
-#include "common/crypto_types.h"
-#include "common/session_types.h"
-#include "common/transcript.h"
+#include "spdm_lite/common/capabilities.h"
+#include "spdm_lite/common/crypto_types.h"
+#include "spdm_lite/common/session_types.h"
+#include "spdm_lite/common/transcript.h"
 
 #ifdef __cplusplus
 extern "C" {

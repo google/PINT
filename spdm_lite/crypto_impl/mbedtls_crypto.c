@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "crypto_impl/mbedtls_crypto.h"
+#include "spdm_lite/crypto_impl/mbedtls_crypto.h"
 
 #include <string.h>
 
-#include "common/crypto_types.h"
+#include "spdm_lite/common/crypto_types.h"
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/ecdh.h"
 #include "mbedtls/ecdsa.h"

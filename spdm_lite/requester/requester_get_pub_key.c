@@ -15,14 +15,14 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "common/crypto.h"
-#include "common/messages.h"
-#include "common/utils.h"
-#include "common/vendor_defined_pub_key.h"
-#include "common/version.h"
-#include "everparse/SPDMWrapper.h"
-#include "requester/requester.h"
-#include "requester/send_request.h"
+#include "spdm_lite/common/crypto.h"
+#include "spdm_lite/common/messages.h"
+#include "spdm_lite/common/utils.h"
+#include "spdm_lite/common/vendor_defined_pub_key.h"
+#include "spdm_lite/common/version.h"
+#include "spdm_lite/everparse/SPDMWrapper.h"
+#include "spdm_lite/requester/requester.h"
+#include "spdm_lite/requester/send_request.h"
 
 static int write_get_pub_key(byte_writer* output) {
   SPDM_VENDOR_DEFINED_REQ_RSP vendor_defined_req = {};

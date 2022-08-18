@@ -17,9 +17,9 @@
 
 #include <stdbool.h>
 
-#include "common/session_types.h"
-#include "common/utils.h"
-#include "requester/requester.h"
+#include "spdm_lite/common/session_types.h"
+#include "spdm_lite/common/utils.h"
+#include "spdm_lite/requester/requester.h"
 
 #ifdef __cplusplus
 extern "C" {

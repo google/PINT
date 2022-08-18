@@ -15,7 +15,7 @@
 #ifndef SPDM_LITE_CRYPTO_IMPL_DUMMY_CRYPTO_H_
 #define SPDM_LITE_CRYPTO_IMPL_DUMMY_CRYPTO_H_
 
-#include "common/crypto_types.h"
+#include "spdm_lite/common/crypto_types.h"
 
 // An implementation of the spdm-lite crypto spec that does no real
 // cryptography.

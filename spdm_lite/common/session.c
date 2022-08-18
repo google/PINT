@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "common/session.h"
+#include "spdm_lite/common/session.h"
 
 #include <string.h>
 
-#include "common/crypto.h"
-#include "common/messages.h"
-#include "common/utils.h"
-#include "everparse/SPDMWrapper.h"
+#include "spdm_lite/common/crypto.h"
+#include "spdm_lite/common/messages.h"
+#include "spdm_lite/common/utils.h"
+#include "spdm_lite/everparse/SPDMWrapper.h"
 
 int spdm_generate_session_params(const SpdmCryptoSpec* spec,
                                  SpdmDheAlgorithm alg,

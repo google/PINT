@@ -19,7 +19,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "common/utils.h"
+#include "spdm_lite/common/utils.h"
 
 #ifdef __cplusplus
 extern "C" {

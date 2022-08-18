@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "common/utils.h"
+#include "spdm_lite/common/utils.h"
 
 #include <string.h>
 

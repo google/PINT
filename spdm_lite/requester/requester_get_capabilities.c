@@ -14,11 +14,11 @@
 
 #include <string.h>
 
-#include "common/messages.h"
-#include "common/version.h"
-#include "everparse/SPDMWrapper.h"
-#include "requester/requester.h"
-#include "requester/send_request.h"
+#include "spdm_lite/common/messages.h"
+#include "spdm_lite/common/version.h"
+#include "spdm_lite/everparse/SPDMWrapper.h"
+#include "spdm_lite/requester/requester.h"
+#include "spdm_lite/requester/send_request.h"
 
 int spdm_get_capabilities(SpdmRequesterContext* ctx) {
   SPDM_GET_CAPABILITIES msg = {};

@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "common/sign.h"
+#include "spdm_lite/common/sign.h"
 
 #include <string.h>
 
-#include "common/crypto.h"
-#include "common/utils.h"
-#include "common/version.h"
+#include "spdm_lite/common/crypto.h"
+#include "spdm_lite/common/utils.h"
+#include "spdm_lite/common/version.h"
 
 #define COMBINED_PREFIX_LEN 100
 

@@ -12,18 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "requester/requester.h"
+#include "spdm_lite/requester/requester.h"
 
 #include <stdio.h>
 #include <string.h>
 
-#include "common/crypto.h"
-#include "common/messages.h"
-#include "common/session_types.h"
-#include "common/utils.h"
-#include "common/version.h"
-#include "everparse/SPDMWrapper.h"
-#include "requester/send_request.h"
+#include "spdm_lite/common/crypto.h"
+#include "spdm_lite/common/messages.h"
+#include "spdm_lite/common/session_types.h"
+#include "spdm_lite/common/utils.h"
+#include "spdm_lite/common/version.h"
+#include "spdm_lite/everparse/SPDMWrapper.h"
+#include "spdm_lite/requester/send_request.h"
 
 int spdm_get_version(SpdmRequesterContext* ctx);
 int spdm_get_capabilities(SpdmRequesterContext* ctx);

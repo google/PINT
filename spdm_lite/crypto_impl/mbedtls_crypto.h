@@ -15,7 +15,7 @@
 #ifndef SPDM_LITE_CRYPTO_IMPL_MBEDTLS_CRYPTO_H_
 #define SPDM_LITE_CRYPTO_IMPL_MBEDTLS_CRYPTO_H_
 
-#include "common/crypto_types.h"
+#include "spdm_lite/common/crypto_types.h"
 
 #ifdef __cplusplus
 extern "C" {
