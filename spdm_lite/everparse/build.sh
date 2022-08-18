@@ -27,7 +27,7 @@ in_file="SPDM.3d"
 filename=`basename -- "${in_file}"`
 filename="${filename%.*}"
 
-dir=`dirname -- "${in_file}"`
+dir="`dirname -- "${in_file}"`/../library/everparse"
 
 eval "${EVERPARSE} --odir ${TEMP_D} ${in_file}"
 

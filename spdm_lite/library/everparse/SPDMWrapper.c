@@ -14,8 +14,8 @@
 
 #include "spdm_lite/everparse/SPDMWrapper.h"
 
-#include "spdm_lite/everparse/EverParse.h"
-#include "spdm_lite/everparse/SPDM.h"
+#include "EverParse.h"
+#include "SPDM.h"
 
 #if (defined(_WIN32) || defined(_WIN64)) && \
     (defined(__GNUC__) || defined(__clang__))

@@ -2,8 +2,10 @@ cmake_minimum_required(VERSION 3.10)
 
 project(spdm_lite)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${CMAKE_CURRENT_SOURCE_DIR}/..")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I${CMAKE_CURRENT_SOURCE_DIR}/..")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${CMAKE_CURRENT_SOURCE_DIR}/include")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I${CMAKE_CURRENT_SOURCE_DIR}/include")
+
+set(TEST_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/testing/include")
 
 # GoogleTest requires at least C++14
 set(CMAKE_CXX_STANDARD 14)
@@ -20,26 +22,27 @@ FetchContent_MakeAvailable(googletest)
 
 ## Declare libraries ##
 
-add_library(utils STATIC common/utils.c)
+add_library(utils STATIC
+    library/common/utils.c)
 
 
 add_library(everparse STATIC
-    everparse/SPDM.c
-    everparse/SPDMWrapper.c)
+    library/everparse/SPDM.c
+    library/everparse/SPDMWrapper.c)
 
 target_link_libraries(everparse
     utils)
 
 
 add_library(common STATIC
-    common/algorithms.c
-    common/crypto.c
-    common/crypto_types.c
-    common/error.c
-    common/key_schedule.c
-    common/session.c
-    common/sign.c
-    common/transcript.c)
+    library/common/algorithms.c
+    library/common/crypto.c
+    library/common/crypto_types.c
+    library/common/error.c
+    library/common/key_schedule.c
+    library/common/session.c
+    library/common/sign.c
+    library/common/transcript.c)
 
 target_link_libraries(common
     everparse
@@ -47,15 +50,15 @@ target_link_libraries(common
 
 
 add_library(requester STATIC
-    requester/requester.c
-    requester/requester_finish.c
-    requester/requester_get_capabilities.c
-    requester/requester_get_pub_key.c
-    requester/requester_get_version.c
-    requester/requester_give_pub_key.c
-    requester/requester_key_exchange.c
-    requester/requester_negotiate_algorithms.c
-    requester/send_request.c)
+    library/requester/requester.c
+    library/requester/requester_finish.c
+    library/requester/requester_get_capabilities.c
+    library/requester/requester_get_pub_key.c
+    library/requester/requester_get_version.c
+    library/requester/requester_give_pub_key.c
+    library/requester/requester_key_exchange.c
+    library/requester/requester_negotiate_algorithms.c
+    library/requester/send_request.c)
 
 target_link_libraries(requester
     common
@@ -64,14 +67,14 @@ target_link_libraries(requester
 
 
 add_library(responder STATIC
-    responder/responder.c
-    responder/state_need_requester_key.c
-    responder/state_session_established.c
-    responder/state_waiting_for_finish.c
-    responder/state_waiting_for_get_capabilities.c
-    responder/state_waiting_for_get_version.c
-    responder/state_waiting_for_key_exchange.c
-    responder/state_waiting_for_negotiate_algorithms.c)
+    library/responder/responder.c
+    library/responder/state_need_requester_key.c
+    library/responder/state_session_established.c
+    library/responder/state_waiting_for_finish.c
+    library/responder/state_waiting_for_get_capabilities.c
+    library/responder/state_waiting_for_get_version.c
+    library/responder/state_waiting_for_key_exchange.c
+    library/responder/state_waiting_for_negotiate_algorithms.c)
 
 target_link_libraries(responder
     common
@@ -79,8 +82,8 @@ target_link_libraries(responder
     utils)
 
 
-add_library(dummy_crypto STATIC crypto_impl/dummy_crypto.c)
-add_library(mbedtls_crypto STATIC crypto_impl/mbedtls_crypto.c)
+add_library(dummy_crypto STATIC library/crypto_impl/dummy_crypto.c)
+add_library(mbedtls_crypto STATIC library/crypto_impl/mbedtls_crypto.c)
 
 target_link_libraries(mbedtls_crypto
     common
@@ -89,9 +92,9 @@ target_link_libraries(mbedtls_crypto
 
 
 add_library(testing STATIC
-    testing/add_2_app.c
-    testing/host_context.c
-    testing/utils.cc)
+    testing/library/add_2_app.c
+    testing/library/host_context.c
+    testing/library/utils.cc)
 
 target_link_libraries(testing
     common
@@ -100,6 +103,7 @@ target_link_libraries(testing
     utils
     mbedtls_crypto)
 
+target_include_directories(testing PUBLIC ${TEST_INCLUDES})
 
 ## Declare tests ##
 
@@ -129,6 +133,7 @@ include(GoogleTest)
 
 foreach(TEST ${TESTS})
     add_executable(${TEST} testing/${TEST}.cc)
+    target_include_directories(${TEST} PUBLIC ${TEST_INCLUDES})
     target_link_libraries(${TEST} ${TEST_LIBS})
     gtest_discover_tests(${TEST})
 endforeach()
