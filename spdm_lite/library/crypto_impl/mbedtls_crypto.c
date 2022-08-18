@@ -17,6 +17,12 @@
 #include <string.h>
 
 #include "spdm_lite/common/crypto_types.h"
+
+#include "mbedtls/version.h"
+#if MBEDTLS_VERSION_MAJOR > 2
+#include "mbedtls/compat-2.x.h"
+#endif
+
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/ecdh.h"
 #include "mbedtls/ecdsa.h"
