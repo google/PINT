@@ -51,6 +51,7 @@ std::vector<uint8_t> GetDigest(const uint8_t* data, uint32_t len) {
   int rc =
       spdm_hash(&MBEDTLS_CRYPTO_SPEC, SPDM_HASH_SHA512, data, len, &result);
   assert(rc == 0);
+  (void)rc;
 
   return std::vector<uint8_t>(result.data, result.data + result.size);
 }
@@ -60,6 +61,7 @@ std::vector<uint8_t> GetDigest(const SpdmHash& hash) {
 
   int rc = spdm_get_hash(&hash, &digest);
   assert(rc == 0);
+  (void)rc;
 
   return std::vector<uint8_t>(digest.data, digest.data + digest.size);
 }
@@ -438,6 +440,7 @@ std::vector<uint8_t> MakeFinish(SpdmHash* transcript_hash,
                      /*my_role=*/SPDM_REQUESTER, &digest_result,
                      /*context=*/"finish signing", sig, kSigSize);
   assert(rc == 0);
+  (void)rc;
 
   spdm_extend_hash(transcript_hash, reinterpret_cast<const uint8_t*>(sig),
                    kSigSize);
@@ -448,10 +451,12 @@ std::vector<uint8_t> MakeFinish(SpdmHash* transcript_hash,
   rc = spdm_generate_message_secrets(&MBEDTLS_CRYPTO_SPEC, &session,
                                      SPDM_HANDSHAKE_PHASE, &handshake_secrets);
   assert(rc == 0);
+  (void)rc;
 
   rc = spdm_generate_finished_key(&MBEDTLS_CRYPTO_SPEC, SPDM_REQUESTER,
                                   &handshake_secrets, &finish_key);
   assert(rc == 0);
+  (void)rc;
 
   digest = GetDigest(*transcript_hash);
   digest_result = GetHashResult(digest);
@@ -461,6 +466,7 @@ std::vector<uint8_t> MakeFinish(SpdmHash* transcript_hash,
   rc = spdm_hmac(&MBEDTLS_CRYPTO_SPEC, &finish_key, &digest_result,
                  &hmac_result);
   assert(rc == 0);
+  (void)rc;
 
   memcopy(hmac, hmac_result.data, hmac_result.size);
 
