@@ -15,46 +15,88 @@
 #ifndef SPDM_LITE_COMMON_VENDOR_DEFINED_PUB_KEY_H_
 #define SPDM_LITE_COMMON_VENDOR_DEFINED_PUB_KEY_H_
 
-// This header defines a VENDOR_DEFINED_REQUEST/RESPONSE for exchanging public
-// keys, rather than full certificates. This command must only be sent after the
-// VCA handshake.
+// This header defines VENDOR_DEFINED_REQUEST/RESPONSE messages for exchanging
+// public keys, rather than full certificates.
 //
-// Note: this vendor-defined command has not been endorsed by DMTF or any other
-// standards body.
+// GET_PUB_KEY must only be sent after the VCA handshake. GIVE_PUB_KEY must be
+// sent after KEY_EXCHANGE and before FINISH.
 //
-// The request message has the following field values:
+// Note: these vendor-defined commands have not been endorsed by DMTF or any
+// other standards body.
+//
+// The GET_PUB_KEY request message has the following field values:
 //
 // * StandardID = 0 (DMTF)
 // * Len = 0
 // * ReqLength = 5
 // * VendorDefinedReqPayload[0] = 1
-// * VendorDefinedReqPayload[1..4] = "PUBK"
+// * VendorDefinedReqPayload[1..8] = "GET_PUBK"
 //
-// The response message has the following field values:
+// The GET_PUB_KEY response message has the following field values:
 //
 // * StandardID = 0 (DMTF)
 // * Len = 0
 // * ReqLength = 5 + D
 // * VendorDefinedReqPayload[0] = 1
-// * VendorDefinedReqPayload[1..4] = "PUBK"
-// * VendorDefinedReqPayload[5..] = public key of length D, as selected during
+// * VendorDefinedReqPayload[1..8] = "GET_PUBK"
+// * VendorDefinedReqPayload[9..] = public key of length D, as selected during
 //                                  algorithm negotiation.
+//
+// The GIVE_PUB_KEY request message has the following field values:
+//
+// * StandardID = 0 (DMTF)
+// * Len = 0
+// * ReqLength = 5 + D
+// * VendorDefinedReqPayload[0] = 1
+// * VendorDefinedReqPayload[1..8] = "GIVE_PUB"
+// * VendorDefinedReqPayload[9..] = public key of length D, as selected during
+//                                  algorithm negotiation.
+//
+// The GIVE_PUB_KEY response message has the following field values:
+//
+// * StandardID = 0 (DMTF)
+// * Len = 0
+// * ReqLength = 5
+// * VendorDefinedReqPayload[0] = 1
+// * VendorDefinedReqPayload[1..8] = "GIVE_PUB"
 
 #include <stdint.h>
 
+#include "spdm_lite/common/crypto_types.h"
+#include "spdm_lite/common/utils.h"
+
 #define DMTF_STANDARD_ID 0
 #define DMTF_VD_ID 1
-#define DMTF_VD_PUBKEY_CODE 0x6B6D7570  // "PUBK"
+#define DMTF_VD_GET_PUBKEY_CODE 0x4B4255505F544547   // "GET_PUBK"
+#define DMTF_VD_GIVE_PUBKEY_CODE 0x4255505F45564947  // "GIVE_PUB"
 
+// Either a GET_PUB_KEY request or a GIVE_PUB_KEY response.
 typedef struct {
-  uint8_t vd_id;  // DMTF_VD_ID
-  uint32_t vd_req;  // DMTF_VD_PUBKEY_CODE
-} SPDM_VendorDefinedPubKeyReq;
+  uint8_t vd_id;        // DMTF_VD_ID
+  uint64_t vd_req_rsp;  // DMTF_VD_[GET/GIVE]_PUBKEY_CODE
+} SPDM_VendorDefinedPubKeyEmptyMsg;
 
+// Either a GET_PUB_KEY response or a GIVE_PUB_KEY request.
 typedef struct {
-  uint8_t vd_id;  // DMTF_VD_ID
-  uint32_t vd_rsp;  // DMTF_VD_PUBKEY_CODE
+  uint8_t vd_id;        // DMTF_VD_ID
+  uint64_t vd_req_rsp;  // DMTF_VD_[GET/GIVE]_PUBKEY_CODE
   // uint8_t vd_pubkey[D];
-} SPDM_VendorDefinedPubKeyRsp;
+} SPDM_VendorDefinedPubKeyMsg;
+
+int spdm_write_get_pub_key_req(byte_writer* output);
+int spdm_check_get_pub_key_req(buffer input);
+
+int spdm_write_get_pub_key_rsp(const SpdmAsymPubKey* pub_key,
+                               byte_writer* output);
+int spdm_check_get_pub_key_rsp(buffer input, SpdmAsymAlgorithm alg,
+                               SpdmAsymPubKey* pub_key);
+
+int spdm_write_give_pub_key_req(const SpdmAsymPubKey* pub_key,
+                                byte_writer* output);
+int spdm_check_give_pub_key_req(buffer input, SpdmAsymAlgorithm alg,
+                                SpdmAsymPubKey* pub_key);
+
+int spdm_write_give_pub_key_rsp(byte_writer* output);
+int spdm_check_give_pub_key_rsp(buffer input);
 
 #endif  // SPDM_LITE_COMMON_VENDOR_DEFINED_PUB_KEY_H_

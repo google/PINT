@@ -41,19 +41,13 @@ extern "C" {
           |<-------------------ALGORITHMS----------|
           |                                        | WAITING_FOR_KEY_EXCHANGE
           |-------------GET_PUB_KEY--------------->|
-          |<----------------PUB_KEY----------------|
+          |<------------GET_PUB_KEY_RSP------------|
           |                                        |
           |------------KEY_EXCHANGE--------------->|
           |<-----------KEY_EXCHANGE_RSP------------|
           |                                        | MUTUAL_AUTH_NEED_REQUESTER_KEY
-          |--------GET_ENCAPSULATED_REQUEST------->|
-          |<-----------ENCAPSULATED_REQUEST--------|
-          |<-----------[GET_PUB_KEY]---------------|
-          |                                        |
-          |---DELIVER_ENCAPSULATED_RESPONSE------->|
-          |-----------[PUB_KEY]------------------->|
-          |<----------ENCAPSULATED_RESPONSE_ACK----|
-          |<----------[]---------------------------|
+          |-------------GIVE_PUB_KEY-------------->|
+          |<------------GIVE_PUB_KEY_RSP-----------|
           |                                        | MUTUAL_AUTH_WAITING_FOR_FINISH
           |----------------FINISH----------------->|
           |<---------------FINISH_RSP--------------|
@@ -78,7 +72,6 @@ typedef int (*spdm_app_dispatch_request_fn)(
 typedef struct {
   SpdmSessionParams params;
   SpdmHash transcript_hash;
-  uint8_t pending_pub_key_req_id;
 } SpdmResponderSession;
 
 typedef struct {
@@ -88,6 +81,7 @@ typedef struct {
   SpdmCapabilities responder_caps;
   SpdmAsymPubKey responder_pub_key;
   void* responder_priv_key_ctx;
+  spdm_app_dispatch_request_fn app_dispatch_fn;
 
   SpdmNegotiationTranscript negotiation_transcript;
 
@@ -99,7 +93,6 @@ typedef struct {
 
   // Populated from `KEY_EXCHANGE`
   SpdmResponderSession session;
-  spdm_app_dispatch_request_fn app_dispatch_fn;
 } SpdmResponderContext;
 
 int spdm_initialize_responder_context(

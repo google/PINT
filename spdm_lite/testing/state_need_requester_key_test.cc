@@ -55,7 +55,7 @@ TEST(NeedRequesterKey, GetRequesterKey) {
   std::vector<uint8_t> negotiate_algs_msg = MakeNegotiateAlgorithms();
   std::vector<uint8_t> key_exchange_msg =
       MakeKeyExchange(req_session_id, req_key_ex_pub_key);
-  std::vector<uint8_t> get_encapsulated_req_msg = MakeGetEncapsulatedRequest();
+  std::vector<uint8_t> give_pub_key_msg = MakeGivePubKey(req_pub_key);
 
   ASSERT_EQ(0, DispatchRequest(&ctx, get_version_msg));
   ASSERT_EQ(0, DispatchRequest(&ctx, get_caps_msg));
@@ -64,53 +64,29 @@ TEST(NeedRequesterKey, GetRequesterKey) {
 
   std::vector<uint8_t> rsp;
   ASSERT_EQ(0, DispatchSecureRequest(&ctx, SPDM_HANDSHAKE_PHASE,
-                                     get_encapsulated_req_msg, &rsp));
+                                     give_pub_key_msg, &rsp));
 
   buffer output_msg = MakeBuffer(rsp);
-  buffer rest;
-
-  uint8_t req_id;
-  ASSERT_EQ(0, SpdmCheckEncapsulatedRequest(&output_msg, &rest, &req_id));
-
-  ASSERT_EQ(ctx.session.pending_pub_key_req_id, req_id);
 
   uint16_t standard_id;
   buffer vendor_id;
   buffer payload;
 
-  ASSERT_EQ(0, SpdmCheckVendorDefinedRequest(
-                   &rest, /*rest=*/nullptr, &standard_id, &vendor_id.data,
+  ASSERT_EQ(0, SpdmCheckVendorDefinedResponse(
+                   &output_msg, /*rest=*/nullptr, &standard_id, &vendor_id.data,
                    &vendor_id.size, &payload.data, &payload.size));
 
   EXPECT_EQ(standard_id, DMTF_STANDARD_ID);
   EXPECT_EQ(vendor_id.size, 0);
-  EXPECT_EQ(payload.size, sizeof(SPDM_VendorDefinedPubKeyReq));
+  EXPECT_EQ(payload.size, sizeof(SPDM_VendorDefinedPubKeyMsg));
 
-  auto* pub_key_req =
-      reinterpret_cast<const SPDM_VendorDefinedPubKeyReq*>(payload.data);
+  auto* pub_key_rsp =
+      reinterpret_cast<const SPDM_VendorDefinedPubKeyMsg*>(payload.data);
 
   // TODO(jeffandersen): endianness
-  ASSERT_EQ(pub_key_req->vd_id, DMTF_VD_ID);
-  ASSERT_EQ(pub_key_req->vd_req, DMTF_VD_PUBKEY_CODE);
+  ASSERT_EQ(pub_key_rsp->vd_id, DMTF_VD_ID);
+  ASSERT_EQ(pub_key_rsp->vd_req_rsp, DMTF_VD_GIVE_PUBKEY_CODE);
 
-  std::vector<uint8_t> encapsulated_response =
-      MakeEncapsulatedResponse(req_id, req_pub_key);
-
-  ASSERT_EQ(0, DispatchSecureRequest(&ctx, SPDM_HANDSHAKE_PHASE,
-                                     encapsulated_response, &rsp));
-
-  output_msg = MakeBuffer(rsp);
-
-  uint8_t request_id, payload_type, ack_request_id;
-  ASSERT_EQ(0, SpdmCheckEncapsulatedResponseAck(&output_msg, /*rest=*/nullptr,
-                                                &request_id, &payload_type,
-                                                &ack_request_id));
-
-  ASSERT_EQ(request_id, 0);
-  ASSERT_EQ(payload_type, 0);
-  ASSERT_EQ(ack_request_id, req_id);
-
-  ASSERT_EQ(ctx.session.pending_pub_key_req_id, 0);
   ASSERT_EQ(ctx.session.params.info.peer_pub_key.alg, req_pub_key.alg);
 
   ASSERT_EQ(0,

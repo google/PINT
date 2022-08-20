@@ -56,7 +56,7 @@ TEST(WaitingForFinish, Finish) {
   std::vector<uint8_t> negotiate_algs_msg = MakeNegotiateAlgorithms();
   std::vector<uint8_t> key_exchange_msg =
       MakeKeyExchange(req_session_id, req_key_ex_pub_key);
-  std::vector<uint8_t> get_encapsulated_req_msg = MakeGetEncapsulatedRequest();
+  std::vector<uint8_t> give_pub_key_msg = MakeGivePubKey(req_pub_key);
 
   std::vector<uint8_t> rsp;
 
@@ -86,15 +86,6 @@ TEST(WaitingForFinish, Finish) {
   ExtendHash(&target_digest, key_exchange_msg);
   ExtendHash(&target_digest, rsp);
 
-  ASSERT_EQ(0, DispatchSecureRequest(&ctx, SPDM_HANDSHAKE_PHASE,
-                                     get_encapsulated_req_msg));
-
-  std::vector<uint8_t> encapsulated_response =
-      MakeEncapsulatedResponse(ctx.session.pending_pub_key_req_id, req_pub_key);
-
-  ASSERT_EQ(0, DispatchSecureRequest(&ctx, SPDM_HANDSHAKE_PHASE,
-                                     encapsulated_response));
-
   // Check the transcript before proceeding.
   std::vector<uint8_t> transcript_digest = GetDigest(target_digest);
   SpdmHashResult actual_transcript_digest;
@@ -109,6 +100,8 @@ TEST(WaitingForFinish, Finish) {
   std::vector<uint8_t> finish_msg =
       MakeFinish(&target_digest, ctx.session.params, req_priv_key);
 
+  ASSERT_EQ(
+      0, DispatchSecureRequest(&ctx, SPDM_HANDSHAKE_PHASE, give_pub_key_msg));
   ASSERT_EQ(
       0, DispatchSecureRequest(&ctx, SPDM_HANDSHAKE_PHASE, finish_msg, &rsp));
 

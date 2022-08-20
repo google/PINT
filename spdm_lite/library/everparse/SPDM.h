@@ -1,17 +1,3 @@
-// Copyright 2022 Google LLC.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 
 
 #ifndef __SPDM_H
@@ -33,13 +19,9 @@ extern "C"
 
 #define SPDM____KEY_EXCHANGE ((uint8_t)0xE4U)
 
-#define SPDM____GET_ENCAPSULATED_REQUEST ((uint8_t)0xEAU)
-
-#define SPDM____DELIVER_ENCAPSULATED_RESPONSE ((uint8_t)0xEBU)
+#define SPDM____FINISH ((uint8_t)0xE5U)
 
 #define SPDM____END_SESSION ((uint8_t)0xECU)
-
-#define SPDM____FINISH ((uint8_t)0xE5U)
 
 #define SPDM____VENDOR_DEFINED_REQUEST ((uint8_t)0xFEU)
 
@@ -53,13 +35,9 @@ extern "C"
 
 #define SPDM____KEY_EXCHANGE_RSP ((uint8_t)0x64U)
 
-#define SPDM____ENCAPSULATED_REQUEST ((uint8_t)0x6AU)
-
-#define SPDM____ENCAPSULATED_RESPONSE_ACK ((uint8_t)0x6BU)
+#define SPDM____FINISH_RSP ((uint8_t)0x65U)
 
 #define SPDM____END_SESSION_ACK ((uint8_t)0x6CU)
-
-#define SPDM____FINISH_RSP ((uint8_t)0x65U)
 
 #define SPDM____VENDOR_DEFINED_RESPONSE ((uint8_t)0x7EU)
 
@@ -375,67 +353,6 @@ Enum constant
         uint32_t *OutOpaqueDataLen,
         uint8_t **OutSignature,
         uint8_t **OutResponderVerifyData,
-        uint8_t *Ctxt,
-        void (*Err)(
-            EverParseString x0,
-            EverParseString x1,
-            EverParseString x2,
-            uint8_t *x3,
-            uint8_t *x4,
-            uint64_t x5),
-        uint8_t *Input,
-        uint64_t InputLength,
-        uint64_t StartPosition);
-
-    uint64_t
-    SpdmValidateGetEncapsulatedRequest(
-        uint8_t *Ctxt,
-        void (*Err)(
-            EverParseString x0,
-            EverParseString x1,
-            EverParseString x2,
-            uint8_t *x3,
-            uint8_t *x4,
-            uint64_t x5),
-        uint8_t *Input,
-        uint64_t InputLength,
-        uint64_t StartPosition);
-
-    uint64_t
-    SpdmValidateEncapsulatedRequest(
-        uint8_t *OutRequestId,
-        uint8_t *Ctxt,
-        void (*Err)(
-            EverParseString x0,
-            EverParseString x1,
-            EverParseString x2,
-            uint8_t *x3,
-            uint8_t *x4,
-            uint64_t x5),
-        uint8_t *Input,
-        uint64_t InputLength,
-        uint64_t StartPosition);
-
-    uint64_t
-    SpdmValidateDeliverEncapsulatedResponse(
-        uint8_t *OutRequestId,
-        uint8_t *Ctxt,
-        void (*Err)(
-            EverParseString x0,
-            EverParseString x1,
-            EverParseString x2,
-            uint8_t *x3,
-            uint8_t *x4,
-            uint64_t x5),
-        uint8_t *Input,
-        uint64_t InputLength,
-        uint64_t StartPosition);
-
-    uint64_t
-    SpdmValidateEncapsulatedResponseAck(
-        uint8_t *OutRequestId,
-        uint8_t *OutPayloadType,
-        uint8_t *OutAckRequestId,
         uint8_t *Ctxt,
         void (*Err)(
             EverParseString x0,

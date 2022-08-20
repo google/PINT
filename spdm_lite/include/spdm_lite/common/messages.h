@@ -32,10 +32,8 @@ extern "C" {
 #define SPDM_CODE_GET_CAPABILITIES 0xE1
 #define SPDM_CODE_NEGOTIATE_ALGORITHMS 0xE3
 #define SPDM_CODE_KEY_EXCHANGE 0xE4
-#define SPDM_CODE_GET_ENCAPSULATED_REQUEST 0xEA
-#define SPDM_CODE_DELIVER_ENCAPSULATED_RESPONSE 0xEB
-#define SPDM_CODE_END_SESSION 0xEC
 #define SPDM_CODE_FINISH 0xE5
+#define SPDM_CODE_END_SESSION 0xEC
 #define SPDM_CODE_VENDOR_DEFINED_REQUEST 0xFE
 
 // Response codes
@@ -43,10 +41,8 @@ extern "C" {
 #define SPDM_CODE_CAPABILITIES 0x61
 #define SPDM_CODE_ALGORITHMS 0x63
 #define SPDM_CODE_KEY_EXCHANGE_RSP 0x64
-#define SPDM_CODE_ENCAPSULATED_REQUEST 0x6A
-#define SPDM_CODE_ENCAPSULATED_RESPONSE_ACK 0x6B
-#define SPDM_CODE_END_SESSION_ACK 0x6C
 #define SPDM_CODE_FINISH_RSP 0x65
+#define SPDM_CODE_END_SESSION_ACK 0x6C
 #define SPDM_CODE_VENDOR_DEFINED_RESPONSE 0x7E
 #define SPDM_CODE_ERROR 0x7F
 
@@ -332,39 +328,6 @@ typedef struct PACKED {
   // uint8_t signature[SigLen];
   // uint8_t responder_verify_data[H || 0];
 } SPDM_KEY_EXCHANGE_RSP;
-
-// Table 72
-typedef struct PACKED {
-  SPDM_Preamble preamble;
-  uint8_t param_1_reserved;
-  uint8_t param_2_reserved;
-} SPDM_GET_ENCAPSULATED_REQUEST;
-
-// Table 73
-typedef struct PACKED {
-  SPDM_Preamble preamble;
-  uint8_t param_1_request_id;
-  uint8_t param_2_reserved;
-  // uint8_t encapsulated_request[]
-} SPDM_ENCAPSULATED_REQUEST;
-
-// Table 74
-typedef struct PACKED {
-  SPDM_Preamble preamble;
-  uint8_t param_1_request_id;
-  uint8_t param_2_reserved;
-  // uint8_t encapsulated_response[]
-} SPDM_DELIVER_ENCAPSULATED_RESPONSE;
-
-// Table 75
-typedef struct PACKED {
-  SPDM_Preamble preamble;
-  uint8_t param_1_request_id;
-  uint8_t param_2_payload_type;
-  uint8_t ack_request_id;
-  uint8_t reserved[3];
-  // uint8_t encapsulated_request[]
-} SPDM_ENCAPSULATED_RESPONSE_ACK;
 
 // Table 76
 typedef struct PACKED {

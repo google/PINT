@@ -29,75 +29,19 @@
 #include "spdm_lite/everparse/SPDMWrapper.h"
 #include "spdm_lite/responder/responder.h"
 
-static int write_pub_key(SpdmResponderContext* ctx, byte_writer* output) {
-  SPDM_VENDOR_DEFINED_REQ_RSP vendor_defined_rsp = {};
-  SPDM_VendorDefinedPubKeyRsp pub_key_rsp = {};
-  uint8_t* out;
-  uint32_t out_len;
-
-  uint16_t pub_key_size =
-      spdm_get_asym_pub_key_size(ctx->negotiated_algs.asym_sign_alg);
-
-  uint16_t rsp_len = sizeof(pub_key_rsp) + pub_key_size;
-
-  out_len = sizeof(vendor_defined_rsp) + sizeof(rsp_len) + rsp_len;
-
-  out = reserve_from_writer(output, out_len);
-  if (out == NULL) {
-    return -1;
-  }
-
-  vendor_defined_rsp.preamble.version = SPDM_THIS_VER;
-  vendor_defined_rsp.preamble.request_response_code =
-      SPDM_CODE_VENDOR_DEFINED_RESPONSE;
-  vendor_defined_rsp.standard_id = DMTF_STANDARD_ID;
-  vendor_defined_rsp.vendor_id_len = 0;
-
-  pub_key_rsp.vd_id = DMTF_VD_ID;
-  // TODO(jeffandersen): endianness
-  pub_key_rsp.vd_rsp = DMTF_VD_PUBKEY_CODE;
-
-  memcpy(out, &vendor_defined_rsp, sizeof(vendor_defined_rsp));
-  out += sizeof(vendor_defined_rsp);
-
-  memcpy(out, &rsp_len, sizeof(rsp_len));
-  out += sizeof(rsp_len);
-
-  memcpy(out, &pub_key_rsp, sizeof(pub_key_rsp));
-  out += sizeof(pub_key_rsp);
-
-  memcpy(out, ctx->responder_pub_key.data, pub_key_size);
-  return 0;
-}
-
 static int handle_vendor_defined_req(SpdmResponderContext* ctx, buffer input,
                                      byte_writer* output) {
-  uint16_t standard_id;
-  buffer vendor_id;
-  buffer payload;
-  SPDM_VendorDefinedPubKeyReq pub_key_req;
-
-  int rc = SpdmCheckVendorDefinedRequest(&input, /*rest=*/NULL, &standard_id,
-                                         &vendor_id.data, &vendor_id.size,
-                                         &payload.data, &payload.size);
+  int rc = spdm_check_get_pub_key_req(input);
   if (rc != 0) {
     return spdm_write_error(SPDM_ERR_INVALID_REQUEST, output);
   }
 
-  if (standard_id != DMTF_STANDARD_ID || vendor_id.size != 0 ||
-      payload.size != sizeof(pub_key_req)) {
-    return spdm_write_error(SPDM_ERR_INVALID_REQUEST, output);
+  rc = spdm_write_get_pub_key_rsp(&ctx->responder_pub_key, output);
+  if (rc != 0) {
+    return spdm_write_error(SPDM_ERR_UNSPECIFIED, output);
   }
 
-  memcpy(&pub_key_req, payload.data, sizeof(pub_key_req));
-
-  // TODO(jeffandersen): endianness
-  if (pub_key_req.vd_id != DMTF_VD_ID ||
-      pub_key_req.vd_req != DMTF_VD_PUBKEY_CODE) {
-    return spdm_write_error(SPDM_ERR_INVALID_REQUEST, output);
-  }
-
-  return write_pub_key(ctx, output);
+  return 0;
 }
 
 static int verify_secured_messages_version(buffer opaque_data) {

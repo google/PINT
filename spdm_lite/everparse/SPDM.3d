@@ -18,10 +18,8 @@
 // * GET_CAPABILITIES / CAPABILITIES
 // * NEGOTIATE_ALGORITHMS / ALGORITHMS
 // * KEY_EXCHANGE / KEY_EXCHANGE_RSP
-// * GET_ENCAPSULATED_REQUEST / ENCAPSULATED_REQUEST
-// * DELIVER_ENCAPSULATED_RESPONSE / ENCAPSULATED_RESPONSE_ACK
-// * END_SESSION / END_SESSION_ACK
 // * FINISH / FINISH_RSP
+// * END_SESSION / END_SESSION_ACK
 // * VENDOR_DEFINED_REQUEST / VENDOR_DEFINED_RESPONSE
 // * ERROR
 //
@@ -42,10 +40,8 @@
 #define NEGOTIATE_ALGORITHMS 0xE3
 #define GET_MEASUREMENTS 0xE0
 #define KEY_EXCHANGE 0xE4
-#define GET_ENCAPSULATED_REQUEST 0xEA
-#define DELIVER_ENCAPSULATED_RESPONSE 0xEB
-#define END_SESSION 0xEC
 #define FINISH 0xE5
+#define END_SESSION 0xEC
 #define VENDOR_DEFINED_REQUEST 0xFE
 
 // Response codes
@@ -54,10 +50,8 @@
 #define ALGORITHMS 0x63
 #define MEASUREMENTS 0x60
 #define KEY_EXCHANGE_RSP 0x64
-#define ENCAPSULATED_REQUEST 0x6A
-#define ENCAPSULATED_RESPONSE_ACK 0x6B
-#define END_SESSION_ACK 0x6C
 #define FINISH_RSP 0x65
+#define END_SESSION_ACK 0x6C
 #define VENDOR_DEFINED_RESPONSE 0x7E
 #define ERROR 0x7F
 
@@ -809,63 +803,6 @@ entrypoint typedef struct _KeyExchangeRsp(
     return true;
   };
 } KeyExchangeRsp;
-
-
-// GET_ENCAPSULATED_REQUEST / ENCAPSULATED_REQUEST
-
-// Table 72
-entrypoint typedef struct _GetEncapsulatedRequest {
-  Preamble(GET_ENCAPSULATED_REQUEST) preamble;
-  ReservedParams params;
-} GetEncapsulatedRequest;
-
-// Table 73
-entrypoint typedef struct _EncapsulatedRequest(
-    mutable UINT8* out_request_id) {
-  Preamble(ENCAPSULATED_REQUEST) preamble;
-  UINT8 param_1_request_id
-  {:on-success
-    *out_request_id = param_1_request_id;
-    return true;
-  };
-  UINT8 param_2_reserved;
-  // UINT8 encapsulated_request[]
-} EncapsulatedRequest;
-
-
-// DELIVER_ENCAPSULATED_RESPONSE / ENCAPSULATED_RESPONSE_ACK
-
-// Table 74
-entrypoint typedef struct _DeliverEncapsulatedResponse(
-    mutable UINT8* out_request_id) {
-  Preamble(DELIVER_ENCAPSULATED_RESPONSE) preamble;
-  UINT8 param_1_request_id
-  {:on-success
-    *out_request_id = param_1_request_id;
-    return true;
-  };
-  UINT8 param_2_reserved;
-  // UINT8 encapsulated_response[]
-} DeliverEncapsulatedResponse;
-
-// Table 75
-entrypoint typedef struct _EncapsulatedResponseAck(
-    mutable UINT8* out_request_id,
-    mutable UINT8* out_payload_type,
-    mutable UINT8* out_ack_request_id) {
-  Preamble(ENCAPSULATED_RESPONSE_ACK) preamble;
-  UINT8 param_1_request_id;
-  UINT8 param_2_payload_type { param_2_payload_type <= 0x02 };
-  UINT8 ack_request_id;
-  UINT8 reserved[3]
-  {:on-success
-    *out_request_id = param_1_request_id;
-    *out_payload_type = param_2_payload_type;
-    *out_ack_request_id = ack_request_id;
-    return true;
-  };
-  // UINT8 encapsulated_request[]
-} EncapsulatedResponseAck;
 
 
 // END_SESSION / END_SESSION_ACK

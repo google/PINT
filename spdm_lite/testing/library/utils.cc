@@ -15,11 +15,11 @@
 #include "spdm_lite/testing/utils.h"
 
 #include <assert.h>
+#include <string.h>
 
 #include <algorithm>
 #include <iostream>
 #include <ostream>
-#include <string>
 #include <vector>
 
 #include "spdm_lite/common/crypto.h"
@@ -243,14 +243,14 @@ std::vector<uint8_t> MakeNegotiateAlgorithms() {
 std::vector<uint8_t> MakeGetPubKey() {
   constexpr size_t kGetPubKeyMsgLen = sizeof(SPDM_VENDOR_DEFINED_REQ_RSP) +
                                       sizeof(uint16_t) +
-                                      sizeof(SPDM_VendorDefinedPubKeyReq);
+                                      sizeof(SPDM_VendorDefinedPubKeyEmptyMsg);
 
   std::vector<uint8_t> message(kGetPubKeyMsgLen);
   auto* vendor_defined_req_msg =
       reinterpret_cast<SPDM_VENDOR_DEFINED_REQ_RSP*>(message.data());
   auto* req_len = reinterpret_cast<uint16_t*>(&vendor_defined_req_msg[1]);
   auto* vendor_defined_pub_key_req =
-      reinterpret_cast<SPDM_VendorDefinedPubKeyReq*>(&req_len[1]);
+      reinterpret_cast<SPDM_VendorDefinedPubKeyEmptyMsg*>(&req_len[1]);
 
   *vendor_defined_req_msg = {
       .preamble =
@@ -266,8 +266,44 @@ std::vector<uint8_t> MakeGetPubKey() {
   // TODO(jeffandersen): endianness
   *vendor_defined_pub_key_req = {
       .vd_id = DMTF_VD_ID,
-      .vd_req = DMTF_VD_PUBKEY_CODE,
+      .vd_req_rsp = DMTF_VD_GET_PUBKEY_CODE,
   };
+
+  return message;
+}
+
+std::vector<uint8_t> MakeGivePubKey(const SpdmAsymPubKey& pub_key) {
+  const size_t kGivePubKeyMsgLen =
+      sizeof(SPDM_VENDOR_DEFINED_REQ_RSP) + sizeof(uint16_t) +
+      sizeof(SPDM_VendorDefinedPubKeyMsg) + pub_key.size;
+
+  std::vector<uint8_t> message(kGivePubKeyMsgLen);
+  auto* vendor_defined_req_msg =
+      reinterpret_cast<SPDM_VENDOR_DEFINED_REQ_RSP*>(message.data());
+  auto* req_len = reinterpret_cast<uint16_t*>(&vendor_defined_req_msg[1]);
+  auto* vendor_defined_pub_key_req =
+      reinterpret_cast<SPDM_VendorDefinedPubKeyMsg*>(&req_len[1]);
+  auto* pub_key_bytes =
+      reinterpret_cast<uint8_t*>(&vendor_defined_pub_key_req[1]);
+
+  *vendor_defined_req_msg = {
+      .preamble =
+          {
+              .version = 0x12,
+              .request_response_code = SPDM_CODE_VENDOR_DEFINED_REQUEST,
+          },
+      .standard_id = DMTF_STANDARD_ID,
+  };
+
+  *req_len = sizeof(*vendor_defined_pub_key_req) + pub_key.size;
+
+  // TODO(jeffandersen): endianness
+  *vendor_defined_pub_key_req = {
+      .vd_id = DMTF_VD_ID,
+      .vd_req_rsp = DMTF_VD_GIVE_PUBKEY_CODE,
+  };
+
+  memcpy(pub_key_bytes, pub_key.data, pub_key.size);
 
   return message;
 }
@@ -341,68 +377,6 @@ std::vector<uint8_t> MakeKeyExchange(uint8_t req_session_id[2],
   const uint8_t padding = (4 - (*opaque_data_length % 4)) % 4;
   *opaque_data_length += padding;
   message.resize(kKeyExchangeMsgLen + padding);
-
-  return message;
-}
-
-std::vector<uint8_t> MakeGetEncapsulatedRequest() {
-  std::vector<uint8_t> message(sizeof(SPDM_GET_ENCAPSULATED_REQUEST));
-  *reinterpret_cast<SPDM_GET_ENCAPSULATED_REQUEST*>(message.data()) = {
-      .preamble =
-          {
-              .version = 0x12,
-              .request_response_code = SPDM_CODE_GET_ENCAPSULATED_REQUEST,
-          },
-  };
-
-  return message;
-}
-
-std::vector<uint8_t> MakeEncapsulatedResponse(uint8_t req_id,
-                                              const SpdmAsymPubKey& pub_key) {
-  const uint16_t kPubKeySize = spdm_get_asym_pub_key_size(pub_key.alg);
-  const size_t kMsgLen = sizeof(SPDM_DELIVER_ENCAPSULATED_RESPONSE) +
-                         sizeof(SPDM_VENDOR_DEFINED_REQ_RSP) +
-                         sizeof(uint16_t) +
-                         sizeof(SPDM_VendorDefinedPubKeyRsp) + kPubKeySize;
-
-  std::vector<uint8_t> message(kMsgLen);
-
-  auto* encapsulated_rsp =
-      reinterpret_cast<SPDM_DELIVER_ENCAPSULATED_RESPONSE*>(message.data());
-  auto* vendor_defined_rsp =
-      reinterpret_cast<SPDM_VENDOR_DEFINED_REQ_RSP*>(&encapsulated_rsp[1]);
-  auto* rsp_len = reinterpret_cast<uint16_t*>(&vendor_defined_rsp[1]);
-  auto* pub_key_rsp =
-      reinterpret_cast<SPDM_VendorDefinedPubKeyRsp*>(&rsp_len[1]);
-  auto* pub_key_msg = reinterpret_cast<uint8_t*>(&pub_key_rsp[1]);
-
-  *encapsulated_rsp = {
-      .preamble =
-          {
-              .version = 0x12,
-              .request_response_code = SPDM_CODE_DELIVER_ENCAPSULATED_RESPONSE,
-          },
-      .param_1_request_id = req_id,
-  };
-
-  *vendor_defined_rsp = {
-      .preamble =
-          {
-              .version = 0x12,
-              .request_response_code = SPDM_CODE_VENDOR_DEFINED_RESPONSE,
-          },
-      .standard_id = DMTF_STANDARD_ID,
-  };
-
-  *rsp_len = sizeof(*pub_key_rsp) + kPubKeySize;
-
-  *pub_key_rsp = {
-      .vd_id = DMTF_VD_ID,
-      .vd_rsp = DMTF_VD_PUBKEY_CODE,  // TODO(jeffandersen): endianness
-  };
-
-  memcopy(pub_key_msg, pub_key.data, kPubKeySize);
 
   return message;
 }

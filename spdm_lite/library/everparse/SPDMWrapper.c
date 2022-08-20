@@ -221,27 +221,6 @@ int SpdmCheckOpaqueElement(buffer* input, buffer* rest, uint8_t* id,
                   opaque_element_data_len, );
 }
 
-int SpdmCheckGetEncapsulatedRequest(buffer* input, buffer* rest) {
-  SPDM_CHECK_BODY(SpdmValidateGetEncapsulatedRequest);
-}
-
-int SpdmCheckEncapsulatedRequest(buffer* input, buffer* rest,
-                                 uint8_t* request_id) {
-  SPDM_CHECK_BODY(SpdmValidateEncapsulatedRequest, request_id, );
-}
-
-int SpdmCheckDeliverEncapsulatedResponse(buffer* input, buffer* rest,
-                                         uint8_t* request_id) {
-  SPDM_CHECK_BODY(SpdmValidateDeliverEncapsulatedResponse, request_id, );
-}
-
-int SpdmCheckEncapsulatedResponseAck(buffer* input, buffer* rest,
-                                     uint8_t* request_id, uint8_t* payload_type,
-                                     uint8_t* ack_request_id) {
-  SPDM_CHECK_BODY(SpdmValidateEncapsulatedResponseAck, request_id, payload_type,
-                  ack_request_id, );
-}
-
 static int SpdmCheckEndSessionInternal(
     buffer* input, buffer* rest, unsigned char* preserve_negotiated_state) {
   SPDM_CHECK_BODY(SpdmValidateEndSession, preserve_negotiated_state, );

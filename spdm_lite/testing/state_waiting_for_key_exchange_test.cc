@@ -102,13 +102,14 @@ TEST(WaitingForKeyExchange, KeyExchange) {
 
   ASSERT_EQ(standard_id, DMTF_STANDARD_ID);
   ASSERT_EQ(vendor_id.size, 0);
-  ASSERT_EQ(payload.size, sizeof(SPDM_VendorDefinedPubKeyRsp) + pub_key_size);
+  ASSERT_EQ(payload.size,
+            sizeof(SPDM_VendorDefinedPubKeyEmptyMsg) + pub_key_size);
 
   auto* pub_key_rsp =
-      reinterpret_cast<const SPDM_VendorDefinedPubKeyRsp*>(payload.data);
+      reinterpret_cast<const SPDM_VendorDefinedPubKeyEmptyMsg*>(payload.data);
   ASSERT_EQ(pub_key_rsp->vd_id, DMTF_VD_ID);
   // TODO(jeffandersen): endianness
-  ASSERT_EQ(pub_key_rsp->vd_rsp, DMTF_VD_PUBKEY_CODE);
+  ASSERT_EQ(pub_key_rsp->vd_req_rsp, DMTF_VD_GET_PUBKEY_CODE);
 
   SpdmAsymPubKey pub_key_in_response;
   spdm_init_asym_pub_key(&pub_key_in_response, SPDM_ASYM_ECDSA_ECC_NIST_P256);

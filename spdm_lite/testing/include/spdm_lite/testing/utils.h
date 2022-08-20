@@ -48,11 +48,9 @@ std::vector<uint8_t> MakeGetVersion();
 std::vector<uint8_t> MakeGetCapabilities();
 std::vector<uint8_t> MakeNegotiateAlgorithms();
 std::vector<uint8_t> MakeGetPubKey();
+std::vector<uint8_t> MakeGivePubKey(const SpdmAsymPubKey& pub_key);
 std::vector<uint8_t> MakeKeyExchange(uint8_t req_session_id[2],
                                      const SpdmDhePubKey& dhe_pub_key);
-std::vector<uint8_t> MakeGetEncapsulatedRequest();
-std::vector<uint8_t> MakeEncapsulatedResponse(uint8_t req_id,
-                                              const SpdmAsymPubKey& pub_key);
 std::vector<uint8_t> MakeFinish(SpdmHash* transcript_hash,
                                 const SpdmSessionParams& session,
                                 SpdmAsymPrivKey& req_priv_key);

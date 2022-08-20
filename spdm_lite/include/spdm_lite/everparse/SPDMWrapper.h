@@ -131,18 +131,6 @@ int SpdmCheckOpaqueElement(buffer* input, buffer* rest, uint8_t* id,
                            const uint8_t** opaque_element_data,
                            uint32_t* opaque_element_data_len);
 
-int SpdmCheckGetEncapsulatedRequest(buffer* input, buffer* rest);
-
-int SpdmCheckEncapsulatedRequest(buffer* input, buffer* rest,
-                                 uint8_t* request_id);
-
-int SpdmCheckDeliverEncapsulatedResponse(buffer* input, buffer* rest,
-                                         uint8_t* request_id);
-
-int SpdmCheckEncapsulatedResponseAck(buffer* input, buffer* rest,
-                                     uint8_t* request_id, uint8_t* payload_type,
-                                     uint8_t* ack_request_id);
-
 int SpdmCheckEndSession(buffer* input, buffer* rest,
                         bool* preserve_negotiated_state);
 

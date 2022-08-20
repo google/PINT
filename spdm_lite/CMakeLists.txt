@@ -42,7 +42,8 @@ add_library(common STATIC
     library/common/key_schedule.c
     library/common/session.c
     library/common/sign.c
-    library/common/transcript.c)
+    library/common/transcript.c
+    library/common/vendor_defined_pub_key.c)
 
 target_link_libraries(common
     everparse
