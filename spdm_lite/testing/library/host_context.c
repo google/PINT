@@ -80,4 +80,5 @@ void initialize_host_responder_context(SpdmAsymPrivKey* priv_key,
   int rc = spdm_initialize_responder_context(
       ctx, &MBEDTLS_CRYPTO_SPEC, HOST_CAPS, pub_key, priv_key, app_fn);
   assert(rc == 0);
+  (void)rc;
 }
