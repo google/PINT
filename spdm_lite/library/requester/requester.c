@@ -14,7 +14,6 @@
 
 #include "spdm_lite/requester/requester.h"
 
-#include <stdio.h>
 #include <string.h>
 
 #include "spdm_lite/common/crypto.h"
@@ -65,43 +64,36 @@ int spdm_establish_session(SpdmRequesterContext* ctx,
 
   int rc = spdm_get_version(ctx);
   if (rc != 0) {
-    printf("spdm_get_version failed\n");
     goto cleanup;
   }
 
   rc = spdm_get_capabilities(ctx);
   if (rc != 0) {
-    printf("spdm_get_capabilities failed\n");
     goto cleanup;
   }
 
   rc = spdm_negotiate_algorithms(ctx, session);
   if (rc != 0) {
-    printf("spdm_negotiate_algorithms failed\n");
     goto cleanup;
   }
 
   rc = spdm_get_pub_key(ctx, session);
   if (rc != 0) {
-    printf("spdm_get_pub_key failed\n");
     goto cleanup;
   }
 
   rc = spdm_key_exchange(ctx, session, &transcript_hash);
   if (rc != 0) {
-    printf("spdm_key_exchange failed\n");
     goto cleanup;
   }
 
   rc = spdm_give_pub_key(ctx, session);
   if (rc != 0) {
-    printf("spdm_give_pub_key failed\n");
     goto cleanup;
   }
 
   rc = spdm_finish(ctx, session, &transcript_hash);
   if (rc != 0) {
-    printf("spdm_finish failed\n");
     goto cleanup;
   }
 

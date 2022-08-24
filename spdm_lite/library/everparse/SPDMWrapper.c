@@ -17,24 +17,9 @@
 #include "EverParse.h"
 #include "SPDM.h"
 
-#if (defined(_WIN32) || defined(_WIN64)) && \
-    (defined(__GNUC__) || defined(__clang__))
-
-#include <stdio.h>
-
-static void ErrorHandler(const char* typename_s, const char* fieldname,
-                         const char* reason, uint8_t* context,
-                         EverParseInputBuffer input, uint64_t start_pos) {
-  printf("typename: %s\nfieldname: %s\nreason: %s\nstart_pos: %lu\n",
-         typename_s, fieldname, reason, start_pos);
-}
-
-#else
-
 static void ErrorHandler(const char* typename_s, const char* fieldname,
                          const char* reason, uint8_t* context,
                          EverParseInputBuffer input, uint64_t start_pos) {}
-#endif
 
 // Note: invocations with args require a trailing comma for reasons.
 #define SPDM_CHECK_BODY(func, ...)                                             \

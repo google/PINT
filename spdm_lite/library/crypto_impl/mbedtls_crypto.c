@@ -422,7 +422,6 @@ static int sign_with_priv_key(SpdmAsymAlgorithm alg, void* priv_key_ctx,
   SpdmAsymPrivKey* priv_key = (SpdmAsymPrivKey*)priv_key_ctx;
 
   if (alg != priv_key->alg) {
-    printf("alg (%d) != %d\n", alg, priv_key->alg);
     return -1;
   }
 
