@@ -12,9 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "spdm_lite/crypto_impl/dummy_crypto.h"
+
 #include <string.h>
 
 #include "spdm_lite/common/crypto_types.h"
+#include "spdm_lite/crypto_impl/raw_serialize.h"
 
 static int NonRandom(uint8_t* data, uint32_t len) {
   for (int i = 0; i < len; ++i) {
@@ -51,16 +54,16 @@ static int GenerateDheSecret(const SpdmDhePrivKey* priv_key,
   return 0;
 }
 
-static int SignWithPrivateKey(SpdmAsymAlgorithm alg, void* priv_key_ctx,
-                              const uint8_t* input, uint32_t input_len,
-                              uint8_t* sig, uint32_t sig_len) {
-  return NonRandom(sig, sig_len);
-}
-
 static int VerifyWithPublicKey(const SpdmAsymPubKey* pub_key,
                                const uint8_t* input, uint32_t input_len,
                                const uint8_t* sig, uint32_t sig_len) {
   return 0;
+}
+
+static int SignWithPrivateKey(SpdmAsymAlgorithm alg, void* priv_key_ctx,
+                              const uint8_t* input, uint32_t input_len,
+                              uint8_t* sig, uint32_t sig_len) {
+  return NonRandom(sig, sig_len);
 }
 
 static int Hmac(SpdmHashAlgorithm alg, const uint8_t* key, uint32_t key_len,
@@ -101,6 +104,12 @@ static int AesGcmDecrypt(const SpdmAeadKey* key, const SpdmAeadIv* iv,
   return 0;
 }
 
+int spdm_fill_dummy_asym_p256_keypair(SpdmAsymPubKey* pub_key) {
+  spdm_init_asym_pub_key(pub_key, SPDM_ASYM_ECDSA_ECC_NIST_P256);
+
+  return NonRandom(pub_key->data, pub_key->size);
+}
+
 const SpdmCryptoSpec DUMMY_CRYPTO_SPEC = {
     .supported_algs =
         {
@@ -125,8 +134,10 @@ const SpdmCryptoSpec DUMMY_CRYPTO_SPEC = {
     .validate_dhe_key = ValidateDheKey,
     .gen_dhe_keypair = GenerateDheKeypair,
     .gen_dhe_secret = GenerateDheSecret,
-    .sign_with_priv_key = SignWithPrivateKey,
     .verify_with_pub_key = VerifyWithPublicKey,
+    .serialize_pub_key = spdm_raw_serialize_asym_key,
+    .deserialize_pub_key = spdm_raw_serialize_asym_key,
+    .sign_with_priv_key = SignWithPrivateKey,
     .hmac = Hmac,
     .hkdf_expand = HkdfExpand,
     .aes_gcm_encrypt = AesGcmEncrypt,

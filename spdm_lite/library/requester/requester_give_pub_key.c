@@ -24,7 +24,9 @@ int spdm_give_pub_key(SpdmRequesterContext* ctx, SpdmSessionParams* session) {
   byte_writer writer = {ctx->dispatch_ctx.scratch,
                         ctx->dispatch_ctx.scratch_size, 0};
 
-  int rc = spdm_write_give_pub_key_req(&ctx->requester_pub_key, &writer);
+  int rc = spdm_write_give_pub_key_req(
+      &ctx->dispatch_ctx.crypto_spec, &ctx->requester_pub_key,
+      session->info.negotiated_algs.hash_alg, &writer);
   if (rc != 0) {
     return rc;
   }

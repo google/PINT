@@ -33,8 +33,8 @@ int spdm_dispatch_request_need_requester_key(SpdmResponderContext* ctx,
 
   SpdmAsymPubKey pub_key_in_request;
   rc = spdm_check_give_pub_key_req(
-      input, session_info->negotiated_algs.asym_verify_alg,
-      &pub_key_in_request);
+      &ctx->crypto_spec, input, session_info->negotiated_algs.asym_verify_alg,
+      session_info->negotiated_algs.hash_alg, &pub_key_in_request);
   if (rc != 0) {
     return spdm_write_error(SPDM_ERR_INVALID_REQUEST, output);
   }

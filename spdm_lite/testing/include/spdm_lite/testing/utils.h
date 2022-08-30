@@ -21,7 +21,7 @@
 #include "spdm_lite/common/crypto_types.h"
 #include "spdm_lite/common/session_types.h"
 #include "spdm_lite/common/utils.h"
-#include "spdm_lite/crypto_impl/mbedtls_crypto.h"
+#include "spdm_lite/crypto_impl/mbedtls_sign.h"
 #include "spdm_lite/responder/responder.h"
 
 void ExtendHash(SpdmHash* hash, const std::vector<uint8_t>& b);

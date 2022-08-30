@@ -31,8 +31,10 @@
 #include "spdm_lite/common/sign.h"
 #include "spdm_lite/common/utils.h"
 #include "spdm_lite/common/vendor_defined_pub_key.h"
-#include "spdm_lite/crypto_impl/mbedtls_crypto.h"
+#include "spdm_lite/crypto_impl/mbedtls_sign.h"
 #include "spdm_lite/testing/host_context.h"
+
+namespace {
 
 // Clang for some reason doesn't like memcpy in .cc files... weird.
 void memcopy(uint8_t* dst, const uint8_t* src, uint32_t len) {
@@ -41,6 +43,8 @@ void memcopy(uint8_t* dst, const uint8_t* src, uint32_t len) {
   }
 }
 
+}  // namespace
+
 void ExtendHash(SpdmHash* hash, const std::vector<uint8_t>& b) {
   spdm_extend_hash(hash, b.data(), b.size());
 }
@@ -48,8 +52,8 @@ void ExtendHash(SpdmHash* hash, const std::vector<uint8_t>& b) {
 std::vector<uint8_t> GetDigest(const uint8_t* data, uint32_t len) {
   SpdmHashResult result;
 
-  int rc =
-      spdm_hash(&MBEDTLS_CRYPTO_SPEC, SPDM_HASH_SHA512, data, len, &result);
+  int rc = spdm_hash(get_mbedtls_crypto_spec(), SPDM_HASH_SHA512, data, len,
+                     &result);
   assert(rc == 0);
   (void)rc;
 
@@ -272,9 +276,13 @@ std::vector<uint8_t> MakeGetPubKey() {
 }
 
 std::vector<uint8_t> MakeGivePubKey(const SpdmAsymPubKey& pub_key) {
+  SpdmSerializedAsymPubKey serialized_peer_key = {};
+  spdm_serialize_asym_key(get_mbedtls_crypto_spec(), &pub_key, SPDM_HASH_SHA512,
+                          &serialized_peer_key);
+
   const size_t kGivePubKeyMsgLen =
       sizeof(SPDM_VENDOR_DEFINED_REQ_RSP) + sizeof(uint16_t) +
-      sizeof(SPDM_VendorDefinedPubKeyMsg) + pub_key.size;
+      sizeof(SPDM_VendorDefinedPubKeyMsg) + serialized_peer_key.size;
 
   std::vector<uint8_t> message(kGivePubKeyMsgLen);
   auto* vendor_defined_req_msg =
@@ -294,7 +302,7 @@ std::vector<uint8_t> MakeGivePubKey(const SpdmAsymPubKey& pub_key) {
       .standard_id = DMTF_STANDARD_ID,
   };
 
-  *req_len = sizeof(*vendor_defined_pub_key_req) + pub_key.size;
+  *req_len = sizeof(*vendor_defined_pub_key_req) + serialized_peer_key.size;
 
   // TODO(jeffandersen): endianness
   *vendor_defined_pub_key_req = {
@@ -302,7 +310,7 @@ std::vector<uint8_t> MakeGivePubKey(const SpdmAsymPubKey& pub_key) {
       .vd_req_rsp = DMTF_VD_GIVE_PUBKEY_CODE,
   };
 
-  memcpy(pub_key_bytes, pub_key.data, pub_key.size);
+  memcpy(pub_key_bytes, serialized_peer_key.data, serialized_peer_key.size);
 
   return message;
 }
@@ -408,7 +416,7 @@ std::vector<uint8_t> MakeFinish(SpdmHash* transcript_hash,
   std::vector<uint8_t> digest = GetDigest(*transcript_hash);
   SpdmHashResult digest_result = GetHashResult(digest);
 
-  int rc = spdm_sign(&MBEDTLS_CRYPTO_SPEC, req_priv_key.alg,
+  int rc = spdm_sign(get_mbedtls_crypto_spec(), req_priv_key.alg,
                      reinterpret_cast<void*>(&req_priv_key),
                      /*my_role=*/SPDM_REQUESTER, &digest_result,
                      /*context=*/"finish signing", sig, kSigSize);
@@ -421,12 +429,12 @@ std::vector<uint8_t> MakeFinish(SpdmHash* transcript_hash,
   SpdmMessageSecrets handshake_secrets;
   SpdmHashResult finish_key;
 
-  rc = spdm_generate_message_secrets(&MBEDTLS_CRYPTO_SPEC, &session,
+  rc = spdm_generate_message_secrets(get_mbedtls_crypto_spec(), &session,
                                      SPDM_HANDSHAKE_PHASE, &handshake_secrets);
   assert(rc == 0);
   (void)rc;
 
-  rc = spdm_generate_finished_key(&MBEDTLS_CRYPTO_SPEC, SPDM_REQUESTER,
+  rc = spdm_generate_finished_key(get_mbedtls_crypto_spec(), SPDM_REQUESTER,
                                   &handshake_secrets, &finish_key);
   assert(rc == 0);
   (void)rc;
@@ -436,7 +444,7 @@ std::vector<uint8_t> MakeFinish(SpdmHash* transcript_hash,
 
   SpdmHashResult hmac_result;
 
-  rc = spdm_hmac(&MBEDTLS_CRYPTO_SPEC, &finish_key, &digest_result,
+  rc = spdm_hmac(get_mbedtls_crypto_spec(), &finish_key, &digest_result,
                  &hmac_result);
   assert(rc == 0);
   (void)rc;
@@ -463,15 +471,15 @@ std::vector<uint8_t> MakeEndSession() {
 int GetSecureMessageKeys(const SpdmSessionParams& session, SPDMRole originator,
                          SpdmSessionPhase phase, SpdmAeadKeys* keys) {
   SpdmMessageSecrets secrets;
-  int rc = spdm_generate_message_secrets(&MBEDTLS_CRYPTO_SPEC, &session, phase,
-                                         &secrets);
+  int rc = spdm_generate_message_secrets(get_mbedtls_crypto_spec(), &session,
+                                         phase, &secrets);
   if (rc != 0) {
     std::cerr << "spdm_generate_message_secrets failed: " << rc << std::endl;
     return rc;
   }
 
   SpdmSessionAeadKeys session_keys;
-  rc = spdm_generate_aead_keys(&MBEDTLS_CRYPTO_SPEC, SPDM_AEAD_AES_256_GCM,
+  rc = spdm_generate_aead_keys(get_mbedtls_crypto_spec(), SPDM_AEAD_AES_256_GCM,
                                &secrets, session.req_seq_num,
                                session.rsp_seq_num, &session_keys);
   if (rc != 0) {
@@ -519,7 +527,7 @@ int EncryptMessage(const std::vector<uint8_t>& message,
   buffer message_buf = {output->data() + sizeof(SPDM_SecuredMessageRecord),
                         static_cast<uint32_t>(message.size())};
 
-  rc = spdm_encrypt_secure_message(&MBEDTLS_CRYPTO_SPEC,
+  rc = spdm_encrypt_secure_message(get_mbedtls_crypto_spec(),
                                    &session.info.session_id, seq_num, &keys,
                                    output->data(), message_buf, &footer_writer);
   if (rc != 0) {

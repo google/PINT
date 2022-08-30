@@ -43,8 +43,9 @@ TEST(WaitingForKeyExchange, KeyExchange) {
 
   SpdmDhePrivKey req_priv_key;
   SpdmDhePubKey req_pub_key;
-  ASSERT_EQ(0, spdm_gen_dhe_keypair(&MBEDTLS_CRYPTO_SPEC, SPDM_DHE_SECP521R1,
-                                    &req_priv_key, &req_pub_key));
+  ASSERT_EQ(0,
+            spdm_gen_dhe_keypair(get_mbedtls_crypto_spec(), SPDM_DHE_SECP521R1,
+                                 &req_priv_key, &req_pub_key));
 
   uint8_t req_session_id[2];
   spdm_get_random(&ctx.crypto_spec, req_session_id, sizeof(req_session_id));
@@ -59,7 +60,7 @@ TEST(WaitingForKeyExchange, KeyExchange) {
   std::vector<uint8_t> rsp;
 
   SpdmHash target_digest;
-  ASSERT_EQ(0, spdm_initialize_hash_struct(&MBEDTLS_CRYPTO_SPEC,
+  ASSERT_EQ(0, spdm_initialize_hash_struct(get_mbedtls_crypto_spec(),
                                            SPDM_HASH_SHA512, &target_digest));
   spdm_initialize_hash(&target_digest);
 
@@ -108,9 +109,11 @@ TEST(WaitingForKeyExchange, KeyExchange) {
   ASSERT_EQ(pub_key_rsp->vd_req_rsp, DMTF_VD_GET_PUBKEY_CODE);
 
   SpdmAsymPubKey pub_key_in_response;
-  spdm_init_asym_pub_key(&pub_key_in_response, SPDM_ASYM_ECDSA_ECC_NIST_P256,
-                         payload.data + sizeof(*pub_key_rsp),
-                         payload.size - sizeof(*pub_key_rsp));
+  ASSERT_EQ(
+      0, spdm_deserialize_asym_key(
+             &ctx.crypto_spec, ctx.negotiated_algs.asym_verify_alg,
+             ctx.negotiated_algs.hash_alg, payload.data + sizeof(*pub_key_rsp),
+             payload.size - sizeof(*pub_key_rsp), &pub_key_in_response));
 
   ASSERT_EQ(0, memcmp(pub_key_in_response.data, ctx.responder_pub_key.data,
                       pub_key_in_response.size));

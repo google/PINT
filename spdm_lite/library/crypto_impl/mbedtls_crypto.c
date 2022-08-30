@@ -16,8 +16,9 @@
 
 #include <string.h>
 
+#include "mbedtls_helpers.h"
+
 #include "spdm_lite/common/crypto_types.h"
-#include "spdm_lite/common/defs.h"
 
 #include "mbedtls/version.h"
 #if MBEDTLS_VERSION_MAJOR > 2
@@ -28,25 +29,11 @@
 #include "mbedtls/ecdh.h"
 #include "mbedtls/ecdsa.h"
 #include "mbedtls/ecp.h"
-#include "mbedtls/entropy.h"
 #include "mbedtls/gcm.h"
 #include "mbedtls/hkdf.h"
 #include "mbedtls/md.h"
 #include "mbedtls/sha256.h"
 #include "mbedtls/sha512.h"
-
-static void make_blinding_drbg(mbedtls_ctr_drbg_context* ctr_drbg) {
-  mbedtls_entropy_context entropy;
-
-  mbedtls_ctr_drbg_init(ctr_drbg);
-  mbedtls_entropy_init(&entropy);
-
-  const char context[] = "spdm_lite";
-  mbedtls_ctr_drbg_seed(ctr_drbg, mbedtls_entropy_func, &entropy, context,
-                        sizeof(context));
-
-  mbedtls_entropy_free(&entropy);
-}
 
 static int get_random(uint8_t* data, uint32_t len) {
   mbedtls_ctr_drbg_context ctr_drbg;
@@ -134,11 +121,6 @@ static int get_hash(void* ctx, SpdmHashAlgorithm alg, uint8_t* digest) {
   return 0;
 }
 
-static uint16_t get_coord_size(mbedtls_ecp_group_id group_id) {
-  uint16_t bit_size = mbedtls_ecp_curve_info_from_grp_id(group_id)->bit_size;
-  return (bit_size / 8) + ((bit_size % 8) != 0);
-}
-
 static int read_ec_point(uint16_t coord_size, const uint8_t* data,
                          mbedtls_ecp_point* p) {
   int rc = mbedtls_mpi_read_binary(&p->X, data, coord_size);
@@ -157,35 +139,6 @@ static int read_ec_point(uint16_t coord_size, const uint8_t* data,
   }
 
   return 0;
-}
-
-static int write_ec_point(uint16_t coord_size, const mbedtls_mpi* x,
-                          const mbedtls_mpi* y, uint8_t* data) {
-  int rc = mbedtls_mpi_write_binary(x, data, coord_size);
-  if (rc != 0) {
-    return rc;
-  }
-
-  rc = mbedtls_mpi_write_binary(y, data + coord_size, coord_size);
-  if (rc != 0) {
-    return rc;
-  }
-
-  return 0;
-}
-
-static mbedtls_ecp_group_id get_asym_group_id(SpdmAsymAlgorithm alg) {
-  switch (alg) {
-    case SPDM_ASYM_ECDSA_ECC_NIST_P256:
-      return MBEDTLS_ECP_DP_SECP256R1;
-    case SPDM_ASYM_ECDSA_ECC_NIST_P384:
-      return MBEDTLS_ECP_DP_SECP384R1;
-    case SPDM_ASYM_ECDSA_ECC_NIST_P521:
-      return MBEDTLS_ECP_DP_SECP521R1;
-    case SPDM_ASYM_UNSUPPORTED:
-    default:
-      return MBEDTLS_ECP_DP_NONE;
-  }
 }
 
 static mbedtls_ecp_group_id get_dhe_group_id(SpdmDheAlgorithm alg) {
@@ -284,48 +237,6 @@ cleanup:
   return rc;
 }
 
-static int generate_keypair(mbedtls_ecp_group_id group_id,
-                            uint8_t* pub_key_data, uint8_t* priv_key_data) {
-  mbedtls_ecp_group g;
-  mbedtls_ecp_group_init(&g);
-
-  mbedtls_mpi d;
-  mbedtls_mpi_init(&d);
-
-  mbedtls_ecp_point p;
-  mbedtls_ecp_point_init(&p);
-
-  mbedtls_ctr_drbg_context ctr_drbg;
-  make_blinding_drbg(&ctr_drbg);
-
-  uint16_t coord_size = get_coord_size(group_id);
-
-  int rc = mbedtls_ecp_group_load(&g, group_id);
-  if (rc != 0) {
-    goto cleanup;
-  }
-
-  rc = mbedtls_ecp_gen_keypair(&g, &d, &p, mbedtls_ctr_drbg_random, &ctr_drbg);
-  if (rc != 0) {
-    goto cleanup;
-  }
-
-  rc = mbedtls_mpi_write_binary(&d, priv_key_data, coord_size);
-  if (rc != 0) {
-    goto cleanup;
-  }
-
-  rc = write_ec_point(coord_size, &p.X, &p.Y, pub_key_data);
-
-cleanup:
-  mbedtls_ecp_group_free(&g);
-  mbedtls_ecp_point_free(&p);
-  mbedtls_mpi_free(&d);
-  mbedtls_ctr_drbg_free(&ctr_drbg);
-
-  return rc;
-}
-
 static int gen_dhe_keypair(SpdmDheAlgorithm alg, uint8_t* priv_key,
                            uint8_t* pub_key) {
   mbedtls_ecp_group_id group_id = get_dhe_group_id(alg);
@@ -412,92 +323,6 @@ cleanup:
   mbedtls_ecp_point_free(&p);
   mbedtls_mpi_free(&d);
   mbedtls_mpi_free(&z);
-  mbedtls_ctr_drbg_free(&ctr_drbg);
-
-  return rc;
-}
-
-static int sign_with_priv_key(SpdmAsymAlgorithm alg, void* priv_key_ctx,
-                              const uint8_t* input, uint32_t input_len,
-                              uint8_t* sig, uint32_t sig_len) {
-  SpdmAsymPrivKey* priv_key = (SpdmAsymPrivKey*)priv_key_ctx;
-
-  if (alg != priv_key->alg) {
-    return -1;
-  }
-
-  mbedtls_ecp_group_id group_id = get_asym_group_id(alg);
-  if (group_id == MBEDTLS_ECP_DP_NONE) {
-    return -1;
-  }
-
-  uint8_t* priv_key_data;
-
-  switch (alg) {
-    case SPDM_ASYM_ECDSA_ECC_NIST_P256:
-      priv_key_data = priv_key->ecdsa_p256;
-      break;
-    case SPDM_ASYM_ECDSA_ECC_NIST_P384:
-      priv_key_data = priv_key->ecdsa_p384;
-      break;
-    case SPDM_ASYM_ECDSA_ECC_NIST_P521:
-      priv_key_data = priv_key->ecdsa_p521;
-      break;
-    case SPDM_ASYM_UNSUPPORTED:
-    default:
-      return -1;
-  }
-
-  uint16_t coord_size = get_coord_size(group_id);
-
-  if (sig_len != spdm_get_asym_signature_size(alg)) {
-    return -1;
-  }
-
-  mbedtls_ecp_group g;
-  mbedtls_ecp_group_init(&g);
-
-  mbedtls_mpi r, s, d;
-  mbedtls_mpi_init(&r);
-  mbedtls_mpi_init(&s);
-  mbedtls_mpi_init(&d);
-
-  mbedtls_ctr_drbg_context ctr_drbg;
-  make_blinding_drbg(&ctr_drbg);
-
-  int rc = mbedtls_ecp_group_load(&g, group_id);
-  if (rc != 0) {
-    goto cleanup;
-  }
-
-  rc = mbedtls_mpi_read_binary(&d, (unsigned char*)priv_key_data, coord_size);
-  if (rc != 0) {
-    goto cleanup;
-  }
-
-  rc = mbedtls_ecdsa_sign_det_ext(&g, &r, &s, &d, (const unsigned char*)input,
-                                  input_len, MBEDTLS_MD_SHA384,
-                                  mbedtls_ctr_drbg_random, &ctr_drbg);
-  if (rc != 0) {
-    goto cleanup;
-  }
-
-  rc = mbedtls_mpi_write_binary(&r, (unsigned char*)sig, coord_size);
-  if (rc != 0) {
-    goto cleanup;
-  }
-
-  rc = mbedtls_mpi_write_binary(&s, (unsigned char*)(sig + coord_size),
-                                coord_size);
-  if (rc != 0) {
-    goto cleanup;
-  }
-
-cleanup:
-  mbedtls_ecp_group_free(&g);
-  mbedtls_mpi_free(&r);
-  mbedtls_mpi_free(&s);
-  mbedtls_mpi_free(&d);
   mbedtls_ctr_drbg_free(&ctr_drbg);
 
   return rc;
@@ -650,28 +475,7 @@ cleanup:
   return rc;
 }
 
-int spdm_generate_asym_keypair(SpdmAsymPrivKey* priv_key,
-                               SpdmAsymPubKey* pub_key) {
-  BUILD_ASSERT(sizeof(pub_key->data) >= P256_SERIALIZED_POINT_SIZE);
-
-  int rc = generate_keypair(MBEDTLS_ECP_DP_SECP256R1, pub_key->data,
-                            priv_key->ecdsa_p256);
-  if (rc != 0) {
-    return rc;
-  }
-
-  rc = spdm_init_asym_pub_key(pub_key, SPDM_ASYM_ECDSA_ECC_NIST_P256,
-                              pub_key->data, P256_SERIALIZED_POINT_SIZE);
-  if (rc != 0) {
-    return rc;
-  }
-
-  priv_key->alg = SPDM_ASYM_ECDSA_ECC_NIST_P256;
-
-  return 0;
-}
-
-const SpdmCryptoSpec MBEDTLS_CRYPTO_SPEC = {
+const SpdmCryptoSpec MBEDTLS_BASE_CRYPTO_SPEC = {
     .supported_algs =
         {
             .asym_sign =
@@ -704,8 +508,12 @@ const SpdmCryptoSpec MBEDTLS_CRYPTO_SPEC = {
     .validate_dhe_key = validate_dhe_key,
     .gen_dhe_keypair = gen_dhe_keypair,
     .gen_dhe_secret = gen_dhe_secret,
-    .sign_with_priv_key = sign_with_priv_key,
     .verify_with_pub_key = verify_with_pub_key,
+    // Sample implementations of these are available in `mbedtls_sign.h` and
+    // `raw_serialize.h`.
+    .sign_with_priv_key = NULL,
+    .serialize_pub_key = NULL,
+    .deserialize_pub_key = NULL,
     .hmac = hmac,
     .hkdf_expand = hkdf_expand,
     .aes_gcm_encrypt = aes_gcm_encrypt,

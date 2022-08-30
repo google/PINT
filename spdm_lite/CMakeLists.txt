@@ -83,8 +83,19 @@ target_link_libraries(responder
     utils)
 
 
-add_library(dummy_crypto STATIC library/crypto_impl/dummy_crypto.c)
-add_library(mbedtls_crypto STATIC library/crypto_impl/mbedtls_crypto.c)
+add_library(raw_serialize STATIC
+    library/crypto_impl/raw_serialize.c)
+
+add_library(dummy_crypto STATIC
+    library/crypto_impl/dummy_crypto.c)
+
+target_link_libraries(dummy_crypto
+    raw_serialize)
+
+add_library(mbedtls_crypto STATIC
+    library/crypto_impl/mbedtls_crypto.c
+    library/crypto_impl/mbedtls_helpers.c
+    library/crypto_impl/mbedtls_sign.c)
 
 target_link_libraries(mbedtls_crypto
     common
@@ -102,7 +113,8 @@ target_link_libraries(testing
     requester
     responder
     utils
-    mbedtls_crypto)
+    mbedtls_crypto
+    raw_serialize)
 
 target_include_directories(testing PUBLIC ${TEST_INCLUDES})
 
@@ -126,6 +138,7 @@ set(TEST_LIBS
     requester
     responder
     mbedtls_crypto
+    raw_serialize
     GTest::gtest_main)
 
 enable_testing()

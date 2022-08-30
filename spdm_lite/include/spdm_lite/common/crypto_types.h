@@ -110,10 +110,17 @@ typedef struct {
 // All algorithm-agile types have a field `.data` that is guaranteed to point to
 // the start of the data regardless of algorithm selection.
 
+// Holds an internal representation of a public key.
 typedef struct {
   SpdmAsymAlgorithm alg;
   uint16_t size;
-  uint8_t data[SPDM_MAX_ASYM_PUB_KEY_SIZE];
+  union {
+    // ECDSA fields hold a raw (X || Y) big-endian coordinate pair.
+    uint8_t ecdsa_p256[P256_SERIALIZED_POINT_SIZE];
+    uint8_t ecdsa_p384[P384_SERIALIZED_POINT_SIZE];
+    uint8_t ecdsa_p521[P521_SERIALIZED_POINT_SIZE];
+    uint8_t data[1];
+  };
 } SpdmAsymPubKey;
 
 typedef struct {
@@ -185,8 +192,8 @@ typedef struct {
   SpdmAeadIv iv;
 } SpdmAeadKeys;
 
-int spdm_init_asym_pub_key(SpdmAsymPubKey* key, SpdmAsymAlgorithm alg,
-                           const uint8_t* data, uint16_t size);
+// These functions initialize various types.
+void spdm_init_asym_pub_key(SpdmAsymPubKey* key, SpdmAsymAlgorithm alg);
 void spdm_init_hash_result(SpdmHashResult* hash, SpdmHashAlgorithm alg);
 void spdm_init_dhe_pub_key(SpdmDhePubKey* key, SpdmDheAlgorithm alg);
 void spdm_init_dhe_priv_key(SpdmDhePrivKey* key, SpdmDheAlgorithm alg);
@@ -194,6 +201,9 @@ void spdm_init_dhe_secret(SpdmDheSecret* secret, SpdmDheAlgorithm alg);
 void spdm_init_aead_key(SpdmAeadKey* key, SpdmAeadAlgorithm alg);
 void spdm_init_aead_iv(SpdmAeadIv* iv, SpdmAeadAlgorithm alg);
 
+// These functions return the size of the object based on the selected
+// algorithm. The returned size matches both the internal and on-the-wire
+// size.
 uint16_t spdm_get_asym_signature_size(SpdmAsymAlgorithm alg);
 uint16_t spdm_get_hash_size(SpdmHashAlgorithm alg);
 uint16_t spdm_get_dhe_pub_key_size(SpdmDheAlgorithm alg);
@@ -211,20 +221,48 @@ typedef void (*ExtendHashFn)(void* ctx, SpdmHashAlgorithm alg,
                              const uint8_t* data, uint32_t len);
 typedef int (*GetHashFn)(void* ctx, SpdmHashAlgorithm alg, uint8_t* digest);
 
-// EC functions
+// Asymmetric crypto functions
+
+// Validates that a given asymmetric signing / DHE key is valid.
 typedef int (*ValidateAsymKeyFn)(const SpdmAsymPubKey* pub_key);
 typedef int (*ValidateDheKeyFn)(const SpdmDhePubKey* pub_key);
+
+// Generates a random ephemeral DHE keypair. `priv_key` must be large enough to
+// hold a raw ECDH private key, and `pub_key` must be large enough to hold a raw
+// ECDH public key (a pair of EC coordinates).
 typedef int (*GenerateDheKeypairFn)(SpdmDheAlgorithm alg, uint8_t* priv_key,
                                     uint8_t* pub_key);
+
+// Generates a shared ECDH secret. `shared_secret` must be large enough to hold
+// the secret generated based on the input keys' algorithm.
 typedef int (*GenerateDheSecretFn)(const SpdmDhePrivKey* priv_key,
                                    const SpdmDhePubKey* pub_key,
                                    uint8_t* shared_secret);
-typedef int (*SignWithPrivateKeyFn)(SpdmAsymAlgorithm alg, void* ctx,
-                                    const uint8_t* input, uint32_t input_len,
-                                    uint8_t* sig, uint32_t sig_len);
+
+// Verifies the given input with the given public key.
 typedef int (*VerifyWithPublicKeyFn)(const SpdmAsymPubKey* pub_key,
                                      const uint8_t* input, uint32_t input_len,
                                      const uint8_t* sig, uint32_t sig_len);
+
+// Signs the given input with the given private key context. The output buffer
+// must match the size of the selected algorithm's signature.
+typedef int (*SignWithPrivateKeyFn)(SpdmAsymAlgorithm alg, void* ctx,
+                                    const uint8_t* input, uint32_t input_len,
+                                    uint8_t* sig, uint32_t sig_len);
+
+// These functions translate between the wire format and the internal
+// representation of a public key. `out_size` is an input-output parameter.
+// `hash_alg` may be ignored if the serialized form does not indicate the hash
+// algorithm.
+typedef int (*SerializeAsymKeyFn)(SpdmAsymAlgorithm asym_alg,
+                                  SpdmHashAlgorithm hash_alg, const uint8_t* in,
+                                  uint16_t in_size, uint8_t* out,
+                                  uint16_t* out_size);
+
+typedef int (*DeserializeAsymKeyFn)(SpdmAsymAlgorithm asym_alg,
+                                    SpdmHashAlgorithm hash_alg,
+                                    const uint8_t* in, uint16_t in_size,
+                                    uint8_t* out, uint16_t* out_size);
 
 // HKDF functions
 typedef int (*HmacFn)(SpdmHashAlgorithm alg, const uint8_t* key,
@@ -266,13 +304,15 @@ typedef struct {
   ExtendHashFn extend_hash;
   GetHashFn get_hash;
 
-  // EC spec
+  // Asym spec
   ValidateAsymKeyFn validate_asym_key;
   ValidateDheKeyFn validate_dhe_key;
   GenerateDheKeypairFn gen_dhe_keypair;
   GenerateDheSecretFn gen_dhe_secret;
-  SignWithPrivateKeyFn sign_with_priv_key;
   VerifyWithPublicKeyFn verify_with_pub_key;
+  SignWithPrivateKeyFn sign_with_priv_key;
+  SerializeAsymKeyFn serialize_pub_key;
+  DeserializeAsymKeyFn deserialize_pub_key;
 
   // HKDF spec
   HmacFn hmac;

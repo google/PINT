@@ -39,7 +39,9 @@ int add_2_app_fn(const SpdmSessionInfo* session_info, uint16_t standard_id,
   rsp.dhe_alg = session_info->negotiated_algs.dhe_alg;
   rsp.aead_alg = session_info->negotiated_algs.aead_alg;
 
-  uint32_t rsp_size = sizeof(rsp) + session_info->peer_pub_key.size;
+  const SpdmAsymPubKey* peer_key = &session_info->peer_pub_key;
+
+  uint32_t rsp_size = sizeof(rsp) + peer_key->size;
   if (*output_size < rsp_size) {
     return -1;
   }
@@ -47,9 +49,9 @@ int add_2_app_fn(const SpdmSessionInfo* session_info, uint16_t standard_id,
   memcpy(output, &rsp, sizeof(rsp));
   output += sizeof(rsp);
 
-  memcpy(output, session_info->peer_pub_key.data,
-         session_info->peer_pub_key.size);
-  output += session_info->peer_pub_key.size;
+  // Don't perform any serialization, just bounce the peer's public key over the
+  // wire in its internal representation.
+  memcpy(output, peer_key->data, peer_key->size);
 
   *output_size = rsp_size;
 

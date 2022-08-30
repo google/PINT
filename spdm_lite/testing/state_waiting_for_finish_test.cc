@@ -22,7 +22,6 @@
 #include "spdm_lite/common/messages.h"
 #include "spdm_lite/common/session_types.h"
 #include "spdm_lite/common/utils.h"
-#include "spdm_lite/crypto_impl/mbedtls_crypto.h"
 #include "spdm_lite/everparse/SPDMWrapper.h"
 #include "spdm_lite/responder/responder.h"
 #include "spdm_lite/testing/host_context.h"
@@ -41,12 +40,14 @@ TEST(WaitingForFinish, Finish) {
 
   SpdmAsymPrivKey req_priv_key;
   SpdmAsymPubKey req_pub_key;
-  ASSERT_EQ(0, spdm_generate_asym_keypair(&req_priv_key, &req_pub_key));
+  ASSERT_EQ(0, spdm_generate_asym_keypair(SPDM_ASYM_ECDSA_ECC_NIST_P256,
+                                          &req_priv_key, &req_pub_key));
 
   SpdmDhePrivKey req_key_ex_priv_key;
   SpdmDhePubKey req_key_ex_pub_key;
-  ASSERT_EQ(0, spdm_gen_dhe_keypair(&MBEDTLS_CRYPTO_SPEC, SPDM_DHE_SECP521R1,
-                                    &req_key_ex_priv_key, &req_key_ex_pub_key));
+  ASSERT_EQ(0,
+            spdm_gen_dhe_keypair(get_mbedtls_crypto_spec(), SPDM_DHE_SECP521R1,
+                                 &req_key_ex_priv_key, &req_key_ex_pub_key));
 
   uint8_t req_session_id[2];
   spdm_get_random(&ctx.crypto_spec, req_session_id, sizeof(req_session_id));
@@ -61,7 +62,7 @@ TEST(WaitingForFinish, Finish) {
   std::vector<uint8_t> rsp;
 
   SpdmHash target_digest;
-  ASSERT_EQ(0, spdm_initialize_hash_struct(&MBEDTLS_CRYPTO_SPEC,
+  ASSERT_EQ(0, spdm_initialize_hash_struct(get_mbedtls_crypto_spec(),
                                            SPDM_HASH_SHA512, &target_digest));
   spdm_initialize_hash(&target_digest);
 
@@ -115,11 +116,12 @@ TEST(WaitingForFinish, Finish) {
   SpdmMessageSecrets handshake_secrets;
   SpdmHashResult finish_key;
   ASSERT_EQ(0, spdm_generate_message_secrets(
-                   &MBEDTLS_CRYPTO_SPEC, &ctx.session.params,
+                   get_mbedtls_crypto_spec(), &ctx.session.params,
                    SPDM_HANDSHAKE_PHASE, &handshake_secrets));
 
-  ASSERT_EQ(0, spdm_generate_finished_key(&MBEDTLS_CRYPTO_SPEC, SPDM_RESPONDER,
-                                          &handshake_secrets, &finish_key));
+  ASSERT_EQ(
+      0, spdm_generate_finished_key(get_mbedtls_crypto_spec(), SPDM_RESPONDER,
+                                    &handshake_secrets, &finish_key));
 
   spdm_extend_hash(&target_digest, reinterpret_cast<const uint8_t*>(rsp.data()),
                    sizeof(SPDM_FINISH_RSP));

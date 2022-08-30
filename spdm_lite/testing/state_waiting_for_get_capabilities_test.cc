@@ -18,7 +18,6 @@
 #include "spdm_lite/common/crypto.h"
 #include "spdm_lite/common/messages.h"
 #include "spdm_lite/common/utils.h"
-#include "spdm_lite/crypto_impl/mbedtls_crypto.h"
 #include "spdm_lite/everparse/SPDMWrapper.h"
 #include "spdm_lite/responder/responder.h"
 #include "spdm_lite/testing/host_context.h"
@@ -35,7 +34,7 @@ TEST(WaitingForGetCapabilities, GetCapabilities) {
   std::vector<uint8_t> rsp;
 
   SpdmHash target_digest;
-  ASSERT_EQ(0, spdm_initialize_hash_struct(&MBEDTLS_CRYPTO_SPEC,
+  ASSERT_EQ(0, spdm_initialize_hash_struct(get_mbedtls_crypto_spec(),
                                            SPDM_HASH_SHA512, &target_digest));
   spdm_initialize_hash(&target_digest);
 

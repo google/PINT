@@ -86,14 +86,21 @@ typedef struct {
 int spdm_write_get_pub_key_req(byte_writer* output);
 int spdm_check_get_pub_key_req(buffer input);
 
-int spdm_write_get_pub_key_rsp(const SpdmAsymPubKey* pub_key,
-                               byte_writer* output);
-int spdm_check_get_pub_key_rsp(buffer input, SpdmAsymAlgorithm alg,
+int spdm_write_get_pub_key_rsp(const SpdmCryptoSpec* crypto_spec,
+                               const SpdmAsymPubKey* pub_key,
+                               SpdmHashAlgorithm hash_alg, byte_writer* output);
+int spdm_check_get_pub_key_rsp(const SpdmCryptoSpec* crypto_spec, buffer input,
+                               SpdmAsymAlgorithm asym_alg,
+                               SpdmHashAlgorithm hash_alg,
                                SpdmAsymPubKey* pub_key);
 
-int spdm_write_give_pub_key_req(const SpdmAsymPubKey* pub_key,
+int spdm_write_give_pub_key_req(const SpdmCryptoSpec* crypto_spec,
+                                const SpdmAsymPubKey* pub_key,
+                                SpdmHashAlgorithm hash_alg,
                                 byte_writer* output);
-int spdm_check_give_pub_key_req(buffer input, SpdmAsymAlgorithm alg,
+int spdm_check_give_pub_key_req(const SpdmCryptoSpec* crypto_spec, buffer input,
+                                SpdmAsymAlgorithm asym_alg,
+                                SpdmHashAlgorithm hash_alg,
                                 SpdmAsymPubKey* pub_key);
 
 int spdm_write_give_pub_key_rsp(byte_writer* output);

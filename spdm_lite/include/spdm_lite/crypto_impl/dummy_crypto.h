@@ -17,8 +17,20 @@
 
 #include "spdm_lite/common/crypto_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif  // __cplusplus
+
+// Initializes a dummy P256 key.
+int spdm_fill_dummy_asym_p256_keypair(SpdmAsymPubKey* pub_key);
+
 // An implementation of the spdm-lite crypto spec that does no real
-// cryptography.
+// cryptography. Includes serialization routines that mirror the internal
+// representation onto the wire.
 extern const SpdmCryptoSpec DUMMY_CRYPTO_SPEC;
+
+#ifdef __cplusplus
+}
+#endif  // __cplusplus
 
 #endif  // SPDM_LITE_CRYPTO_IMPL_DUMMY_CRYPTO_H_

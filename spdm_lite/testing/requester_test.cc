@@ -17,7 +17,6 @@
 #include <vector>
 
 #include "spdm_lite/common/crypto_types.h"
-#include "spdm_lite/crypto_impl/mbedtls_crypto.h"
 #include "spdm_lite/responder/responder.h"
 #include "spdm_lite/testing/add_2_app.h"
 #include "spdm_lite/testing/host_context.h"

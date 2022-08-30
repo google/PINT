@@ -36,7 +36,8 @@ static int handle_vendor_defined_req(SpdmResponderContext* ctx, buffer input,
     return spdm_write_error(SPDM_ERR_INVALID_REQUEST, output);
   }
 
-  rc = spdm_write_get_pub_key_rsp(&ctx->responder_pub_key, output);
+  rc = spdm_write_get_pub_key_rsp(&ctx->crypto_spec, &ctx->responder_pub_key,
+                                  ctx->negotiated_algs.hash_alg, output);
   if (rc != 0) {
     return spdm_write_error(SPDM_ERR_UNSPECIFIED, output);
   }

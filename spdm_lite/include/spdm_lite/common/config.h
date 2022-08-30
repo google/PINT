@@ -27,9 +27,9 @@
 #define SPDM_MAX_HASH_CTX_SIZE 256
 #endif
 
-#ifndef SPDM_MAX_ASYM_PUB_KEY_SIZE
+#ifndef SPDM_MAX_SERIALIZED_ASYM_PUB_KEY_SIZE
 // An (x || y) pair of ECDSA P521 coordinates.
-#define SPDM_MAX_ASYM_PUB_KEY_SIZE (2 * 66)
+#define SPDM_MAX_SERIALIZED_ASYM_PUB_KEY_SIZE (2 * 66)
 #endif
 
 #endif  // SPDM_LITE_COMMON_CONFIG_H_

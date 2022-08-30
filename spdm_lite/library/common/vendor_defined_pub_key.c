@@ -16,6 +16,7 @@
 
 #include <string.h>
 
+#include "spdm_lite/common/crypto.h"
 #include "spdm_lite/common/crypto_types.h"
 #include "spdm_lite/common/messages.h"
 #include "spdm_lite/common/utils.h"
@@ -94,14 +95,21 @@ static int check_empty_msg(buffer input, bool is_request, uint64_t vd_code) {
   return 0;
 }
 
-static int write_pub_key_msg(bool is_request, uint64_t vd_code,
-                             const SpdmAsymPubKey* pub_key,
-                             byte_writer* output) {
+static int write_pub_key_msg(const SpdmCryptoSpec* crypto_spec, bool is_request,
+                             uint64_t vd_code, const SpdmAsymPubKey* pub_key,
+                             SpdmHashAlgorithm hash_alg, byte_writer* output) {
   SPDM_VENDOR_DEFINED_REQ_RSP vendor_defined_msg = {};
   SPDM_VendorDefinedPubKeyMsg pub_key_msg = {};
+  SpdmSerializedAsymPubKey serialized_pub_key;
   uint8_t* out;
 
-  uint16_t rsp_len = sizeof(pub_key_msg) + pub_key->size;
+  int rc = spdm_serialize_asym_key(crypto_spec, pub_key, hash_alg,
+                                   &serialized_pub_key);
+  if (rc != 0) {
+    return rc;
+  }
+
+  uint16_t rsp_len = sizeof(pub_key_msg) + serialized_pub_key.size;
   uint32_t out_len = sizeof(vendor_defined_msg) + sizeof(rsp_len) + rsp_len;
 
   out = reserve_from_writer(output, out_len);
@@ -129,12 +137,15 @@ static int write_pub_key_msg(bool is_request, uint64_t vd_code,
   memcpy(out, &pub_key_msg, sizeof(pub_key_msg));
   out += sizeof(pub_key_msg);
 
-  memcpy(out, pub_key->data, pub_key->size);
+  memcpy(out, serialized_pub_key.data, serialized_pub_key.size);
   return 0;
 }
 
-static int check_pub_key_msg(buffer input, bool is_request, uint64_t vd_code,
-                             SpdmAsymAlgorithm alg, SpdmAsymPubKey* pub_key) {
+static int check_pub_key_msg(const SpdmCryptoSpec* crypto_spec, buffer input,
+                             bool is_request, uint64_t vd_code,
+                             SpdmAsymAlgorithm asym_alg,
+                             SpdmHashAlgorithm hash_alg,
+                             SpdmAsymPubKey* pub_key) {
   int rc;
   uint16_t standard_id;
   buffer vendor_id;
@@ -159,8 +170,7 @@ static int check_pub_key_msg(buffer input, bool is_request, uint64_t vd_code,
     return -1;
   }
 
-  if (payload.size < sizeof(pub_key_msg) ||
-      payload.size > sizeof(pub_key_msg) + sizeof(pub_key->data)) {
+  if (payload.size < sizeof(pub_key_msg)) {
     return -1;
   }
 
@@ -170,7 +180,8 @@ static int check_pub_key_msg(buffer input, bool is_request, uint64_t vd_code,
     return -1;
   }
 
-  return spdm_init_asym_pub_key(pub_key, alg, payload.data, payload.size);
+  return spdm_deserialize_asym_key(crypto_spec, asym_alg, hash_alg,
+                                   payload.data, payload.size, pub_key);
 }
 
 int spdm_write_get_pub_key_req(byte_writer* output) {
@@ -181,28 +192,38 @@ int spdm_check_get_pub_key_req(buffer input) {
   return check_empty_msg(input, /*is_request=*/true, DMTF_VD_GET_PUBKEY_CODE);
 }
 
-int spdm_write_get_pub_key_rsp(const SpdmAsymPubKey* pub_key,
+int spdm_write_get_pub_key_rsp(const SpdmCryptoSpec* crypto_spec,
+                               const SpdmAsymPubKey* pub_key,
+                               SpdmHashAlgorithm hash_alg,
                                byte_writer* output) {
-  return write_pub_key_msg(/*is_request=*/false, DMTF_VD_GET_PUBKEY_CODE,
-                           pub_key, output);
+  return write_pub_key_msg(crypto_spec, /*is_request=*/false,
+                           DMTF_VD_GET_PUBKEY_CODE, pub_key, hash_alg, output);
 }
 
-int spdm_check_get_pub_key_rsp(buffer input, SpdmAsymAlgorithm alg,
+int spdm_check_get_pub_key_rsp(const SpdmCryptoSpec* crypto_spec, buffer input,
+                               SpdmAsymAlgorithm asym_alg,
+                               SpdmHashAlgorithm hash_alg,
                                SpdmAsymPubKey* pub_key) {
-  return check_pub_key_msg(input, /*is_request=*/false, DMTF_VD_GET_PUBKEY_CODE,
-                           alg, pub_key);
+  return check_pub_key_msg(crypto_spec, input, /*is_request=*/false,
+                           DMTF_VD_GET_PUBKEY_CODE, asym_alg, hash_alg,
+                           pub_key);
 }
 
-int spdm_write_give_pub_key_req(const SpdmAsymPubKey* pub_key,
+int spdm_write_give_pub_key_req(const SpdmCryptoSpec* crypto_spec,
+                                const SpdmAsymPubKey* pub_key,
+                                SpdmHashAlgorithm hash_alg,
                                 byte_writer* output) {
-  return write_pub_key_msg(/*is_request=*/true, DMTF_VD_GIVE_PUBKEY_CODE,
-                           pub_key, output);
+  return write_pub_key_msg(crypto_spec, /*is_request=*/true,
+                           DMTF_VD_GIVE_PUBKEY_CODE, pub_key, hash_alg, output);
 }
 
-int spdm_check_give_pub_key_req(buffer input, SpdmAsymAlgorithm alg,
+int spdm_check_give_pub_key_req(const SpdmCryptoSpec* crypto_spec, buffer input,
+                                SpdmAsymAlgorithm asym_alg,
+                                SpdmHashAlgorithm hash_alg,
                                 SpdmAsymPubKey* pub_key) {
-  return check_pub_key_msg(input, /*is_request=*/true, DMTF_VD_GIVE_PUBKEY_CODE,
-                           alg, pub_key);
+  return check_pub_key_msg(crypto_spec, input, /*is_request=*/true,
+                           DMTF_VD_GIVE_PUBKEY_CODE, asym_alg, hash_alg,
+                           pub_key);
 }
 
 int spdm_write_give_pub_key_rsp(byte_writer* output) {

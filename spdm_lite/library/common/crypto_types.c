@@ -16,17 +16,23 @@
 
 #include <string.h>
 
-int spdm_init_asym_pub_key(SpdmAsymPubKey* key, SpdmAsymAlgorithm alg,
-                           const uint8_t* data, uint16_t size) {
-  if (size > sizeof(key->data)) {
-    return -1;
+static uint16_t spdm_get_asym_pub_key_size(SpdmAsymAlgorithm alg) {
+  switch (alg) {
+    case SPDM_ASYM_ECDSA_ECC_NIST_P256:
+      return P256_SERIALIZED_POINT_SIZE;
+    case SPDM_ASYM_ECDSA_ECC_NIST_P384:
+      return P384_SERIALIZED_POINT_SIZE;
+    case SPDM_ASYM_ECDSA_ECC_NIST_P521:
+      return P521_SERIALIZED_POINT_SIZE;
+    case SPDM_ASYM_UNSUPPORTED:
+    default:
+      return 0;
   }
+}
 
+void spdm_init_asym_pub_key(SpdmAsymPubKey* key, SpdmAsymAlgorithm alg) {
   key->alg = alg;
-  key->size = size;
-  memcpy(key->data, data, size);
-
-  return 0;
+  key->size = spdm_get_asym_pub_key_size(alg);
 }
 
 void spdm_init_hash_result(SpdmHashResult* hash, SpdmHashAlgorithm alg) {

@@ -36,6 +36,21 @@ int spdm_get_hash_destructive(SpdmHash* hash, SpdmHashResult* digest);
 int spdm_hash(const SpdmCryptoSpec* crypto_spec, SpdmHashAlgorithm alg,
               const uint8_t* data, uint32_t len, SpdmHashResult* digest);
 
+// Holds a serialized version of a public key.
+typedef struct {
+  SpdmAsymAlgorithm alg;
+  uint16_t size;
+  uint8_t data[SPDM_MAX_SERIALIZED_ASYM_PUB_KEY_SIZE];
+} SpdmSerializedAsymPubKey;
+
+int spdm_serialize_asym_key(const SpdmCryptoSpec* crypto_spec,
+                            const SpdmAsymPubKey* pub_key,
+                            SpdmHashAlgorithm hash_alg,
+                            SpdmSerializedAsymPubKey* out);
+int spdm_deserialize_asym_key(const SpdmCryptoSpec* spec,
+                              SpdmAsymAlgorithm asym_alg,
+                              SpdmHashAlgorithm hash_alg, const uint8_t* in,
+                              uint32_t size, SpdmAsymPubKey* pub_key);
 int spdm_validate_asym_pubkey(const SpdmCryptoSpec* spec,
                               const SpdmAsymPubKey* pub_key);
 int spdm_validate_dhe_pubkey(const SpdmCryptoSpec* spec,

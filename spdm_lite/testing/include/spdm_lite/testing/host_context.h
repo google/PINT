@@ -16,7 +16,7 @@
 #define SPDM_LITE_TESTING_HOST_CONTEXT_H_
 
 #include "spdm_lite/common/crypto_types.h"
-#include "spdm_lite/crypto_impl/mbedtls_crypto.h"
+#include "spdm_lite/crypto_impl/mbedtls_sign.h"
 #include "spdm_lite/requester/requester.h"
 #include "spdm_lite/responder/responder.h"
 
@@ -26,6 +26,10 @@ extern "C" {
 
 #define SPDM_HOST_CT_EXPONENT 10
 #define SPDM_HOST_DATA_TRANSFER_SIZE 1024
+
+// Returns a pointer to a crypto spec that includes the base mbedtls
+// functionality, along with the signing and serialization helpers.
+const SpdmCryptoSpec* get_mbedtls_crypto_spec(void);
 
 void initialize_host_requester_context(SpdmAsymPrivKey* priv_key,
                                        SpdmAsymPubKey* pub_key,

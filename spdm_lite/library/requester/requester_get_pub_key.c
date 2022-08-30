@@ -39,8 +39,10 @@ int spdm_get_pub_key(SpdmRequesterContext* ctx, SpdmSessionParams* session) {
   }
 
   SpdmAsymPubKey pub_key_in_response;
-  rc = spdm_check_get_pub_key_rsp(
-      rsp, session->info.negotiated_algs.asym_verify_alg, &pub_key_in_response);
+  rc = spdm_check_get_pub_key_rsp(&ctx->dispatch_ctx.crypto_spec, rsp,
+                                  session->info.negotiated_algs.asym_verify_alg,
+                                  session->info.negotiated_algs.hash_alg,
+                                  &pub_key_in_response);
   if (rc != 0) {
     return rc;
   }

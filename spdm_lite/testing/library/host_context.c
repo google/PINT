@@ -17,7 +17,10 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include "spdm_lite/common/crypto_types.h"
 #include "spdm_lite/crypto_impl/mbedtls_crypto.h"
+#include "spdm_lite/crypto_impl/mbedtls_sign.h"
+#include "spdm_lite/crypto_impl/raw_serialize.h"
 #include "spdm_lite/requester/requester.h"
 #include "spdm_lite/responder/responder.h"
 
@@ -45,15 +48,32 @@ static const SpdmCapabilities HOST_CAPS = {
     .data_transfer_size = SPDM_HOST_DATA_TRANSFER_SIZE,
 };
 
+const SpdmCryptoSpec* get_mbedtls_crypto_spec(void) {
+  static SpdmCryptoSpec spec;
+  static bool initialized = false;
+
+  if (!initialized) {
+    spec = MBEDTLS_BASE_CRYPTO_SPEC;
+    spec.serialize_pub_key = spdm_raw_serialize_asym_key;
+    spec.deserialize_pub_key = spdm_raw_serialize_asym_key;
+    spec.sign_with_priv_key = spdm_mbedtls_sign_with_priv_key;
+
+    initialized = true;
+  }
+
+  return &spec;
+}
+
 void initialize_host_requester_context(SpdmAsymPrivKey* priv_key,
                                        SpdmAsymPubKey* pub_key,
                                        SpdmResponderContext* target_responder,
                                        SpdmRequesterContext* ctx) {
-  int rc = spdm_generate_asym_keypair(priv_key, pub_key);
+  int rc = spdm_generate_asym_keypair(SPDM_ASYM_ECDSA_ECC_NIST_P256, priv_key,
+                                      pub_key);
   assert(rc == 0);
 
   SpdmDispatchRequestCtx dispatch_ctx = {
-      .crypto_spec = MBEDTLS_CRYPTO_SPEC,
+      .crypto_spec = *get_mbedtls_crypto_spec(),
       .dispatch_fn = dispatch_request,
       .ctx = target_responder,
       .scratch = get_scratch_space(),
@@ -69,10 +89,10 @@ void initialize_host_responder_context(SpdmAsymPrivKey* priv_key,
                                        SpdmAsymPubKey* pub_key,
                                        SpdmResponderContext* ctx,
                                        spdm_app_dispatch_request_fn app_fn) {
-  spdm_generate_asym_keypair(priv_key, pub_key);
+  spdm_generate_asym_keypair(SPDM_ASYM_ECDSA_ECC_NIST_P256, priv_key, pub_key);
 
   int rc = spdm_initialize_responder_context(
-      ctx, &MBEDTLS_CRYPTO_SPEC, HOST_CAPS, pub_key, priv_key, app_fn);
+      ctx, get_mbedtls_crypto_spec(), HOST_CAPS, pub_key, priv_key, app_fn);
   assert(rc == 0);
   (void)rc;
 }

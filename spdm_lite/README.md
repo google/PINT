@@ -60,6 +60,13 @@ this purpose. See `common/vendor_defined_pub_key.h` for the message structure.
 Requesters and Responders are expected to implement an instance of
 `SpdmCryptoSpec`.
 
+These instances contain function pointers for low-level crypto primitives, as
+well as serialization and deserialization functions for asymmetric public keys.
+
+To customize the wire format and/or signing routine, users can provide an
+`SpdmAsymCryptoSpec`, and override `SPDM_MAX_SERIALIZED_ASYM_PUB_KEY_SIZE` in
+`include/spdm_lite/common/config.h`.
+
 ## Parsers
 
 This library parses SPDM messages using

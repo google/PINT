@@ -22,7 +22,6 @@
 #include "spdm_lite/common/messages.h"
 #include "spdm_lite/common/session_types.h"
 #include "spdm_lite/common/utils.h"
-#include "spdm_lite/crypto_impl/mbedtls_crypto.h"
 #include "spdm_lite/everparse/SPDMWrapper.h"
 #include "spdm_lite/responder/responder.h"
 #include "spdm_lite/testing/add_2_app.h"
@@ -74,12 +73,14 @@ TEST(SessionEstablished, AppTraffic) {
 
   SpdmAsymPrivKey req_priv_key;
   SpdmAsymPubKey req_pub_key;
-  ASSERT_EQ(0, spdm_generate_asym_keypair(&req_priv_key, &req_pub_key));
+  ASSERT_EQ(0, spdm_generate_asym_keypair(SPDM_ASYM_ECDSA_ECC_NIST_P256,
+                                          &req_priv_key, &req_pub_key));
 
   SpdmDhePrivKey req_key_ex_priv_key;
   SpdmDhePubKey req_key_ex_pub_key;
-  ASSERT_EQ(0, spdm_gen_dhe_keypair(&MBEDTLS_CRYPTO_SPEC, SPDM_DHE_SECP521R1,
-                                    &req_key_ex_priv_key, &req_key_ex_pub_key));
+  ASSERT_EQ(0,
+            spdm_gen_dhe_keypair(get_mbedtls_crypto_spec(), SPDM_DHE_SECP521R1,
+                                 &req_key_ex_priv_key, &req_key_ex_pub_key));
 
   uint8_t req_session_id[2];
   spdm_get_random(&ctx.crypto_spec, req_session_id, sizeof(req_session_id));
