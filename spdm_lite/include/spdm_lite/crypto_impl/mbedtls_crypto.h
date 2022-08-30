@@ -21,6 +21,7 @@
 extern "C" {
 #endif  // __cplusplus
 
+// Should be used for testing only.
 typedef struct {
   SpdmAsymAlgorithm alg;
   union {
@@ -30,6 +31,7 @@ typedef struct {
   };
 } SpdmAsymPrivKey;
 
+// Should be used for testing only; generates a random ECDSA P256 keypair.
 int spdm_generate_asym_keypair(SpdmAsymPrivKey* priv_key,
                                SpdmAsymPubKey* pub_key);
 

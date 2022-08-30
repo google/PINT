@@ -19,11 +19,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "spdm_lite/common/config.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
-
-#define SPDM_MAX_HASH_CTX_SIZE 256
 
 #define SHA256_DIGEST_SIZE 32
 #define SHA384_DIGEST_SIZE 48
@@ -113,12 +113,7 @@ typedef struct {
 typedef struct {
   SpdmAsymAlgorithm alg;
   uint16_t size;
-  union {
-    uint8_t ecdsa_p256[P256_SERIALIZED_POINT_SIZE];
-    uint8_t ecdsa_p384[P384_SERIALIZED_POINT_SIZE];
-    uint8_t ecdsa_p521[P521_SERIALIZED_POINT_SIZE];
-    uint8_t data[1];
-  };
+  uint8_t data[SPDM_MAX_ASYM_PUB_KEY_SIZE];
 } SpdmAsymPubKey;
 
 typedef struct {
@@ -190,7 +185,8 @@ typedef struct {
   SpdmAeadIv iv;
 } SpdmAeadKeys;
 
-void spdm_init_asym_pub_key(SpdmAsymPubKey* key, SpdmAsymAlgorithm alg);
+int spdm_init_asym_pub_key(SpdmAsymPubKey* key, SpdmAsymAlgorithm alg,
+                           const uint8_t* data, uint16_t size);
 void spdm_init_hash_result(SpdmHashResult* hash, SpdmHashAlgorithm alg);
 void spdm_init_dhe_pub_key(SpdmDhePubKey* key, SpdmDheAlgorithm alg);
 void spdm_init_dhe_priv_key(SpdmDhePrivKey* key, SpdmDheAlgorithm alg);
@@ -198,7 +194,6 @@ void spdm_init_dhe_secret(SpdmDheSecret* secret, SpdmDheAlgorithm alg);
 void spdm_init_aead_key(SpdmAeadKey* key, SpdmAeadAlgorithm alg);
 void spdm_init_aead_iv(SpdmAeadIv* iv, SpdmAeadAlgorithm alg);
 
-uint16_t spdm_get_asym_pub_key_size(SpdmAsymAlgorithm alg);
 uint16_t spdm_get_asym_signature_size(SpdmAsymAlgorithm alg);
 uint16_t spdm_get_hash_size(SpdmHashAlgorithm alg);
 uint16_t spdm_get_dhe_pub_key_size(SpdmDheAlgorithm alg);

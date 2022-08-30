@@ -42,12 +42,10 @@ TEST(SpdmRequester, EstablishSession) {
   SpdmSessionParams session;
   ASSERT_EQ(0, spdm_establish_session(&req_ctx, &session));
 
-  uint16_t req_pub_key_size = spdm_get_asym_pub_key_size(req_pub_key.alg);
-
   uint16_t standard_id = 4;
   std::vector<uint8_t> vendor_id = {0x01, 0x02, 0x03, 0x04};
   uint32_t req_num = 1701;
-  std::vector<uint8_t> rsp(sizeof(Add2AppResponse) + req_pub_key_size);
+  std::vector<uint8_t> rsp(sizeof(Add2AppResponse) + req_pub_key.size);
   size_t rsp_size = rsp.size();
 
   ASSERT_EQ(
@@ -63,7 +61,7 @@ TEST(SpdmRequester, EstablishSession) {
   EXPECT_EQ(0, memcmp(response->session_id.id, session.info.session_id.id,
                       sizeof(response->session_id.id)));
   EXPECT_EQ(0, memcmp(rsp.data() + sizeof(*response), req_pub_key.data,
-                      req_pub_key_size));
+                      req_pub_key.size));
 
   const SpdmNegotiatedAlgs* session_algs = &session.info.negotiated_algs;
   EXPECT_EQ(response->asym_sign_alg, session_algs->asym_sign_alg);

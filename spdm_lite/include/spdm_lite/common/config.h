@@ -12,21 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SPDM_LITE_COMMON_DEFS_H_
-#define SPDM_LITE_COMMON_DEFS_H_
+#ifndef SPDM_LITE_COMMON_CONFIG_H_
+#define SPDM_LITE_COMMON_CONFIG_H_
 
-#ifndef BUILD_ASSERT
-#define _BA1_(cond, line) \
-  extern int __build_assertion_##line[1 - 2 * !(cond)] __attribute__((unused))
-#define _BA0_(c, x) _BA1_(c, x)
-#define BUILD_ASSERT(cond) _BA0_(cond, __LINE__)
+// This file contains configuration values for SPDM-Lite. They can be overridden
+// by defining an `SPDM_CONFIG_FILE`.
+
+#ifdef SPDM_CONFIG_FILE
+#include SPDM_CONFIG_FILE
 #endif
 
-#ifndef PACKED
-#define PACKED __attribute__((__packed__))
+#ifndef SPDM_MAX_HASH_CTX_SIZE
+// Enough space for a reasonable implementation to hold a SHA512 hash context.
+#define SPDM_MAX_HASH_CTX_SIZE 256
 #endif
 
-// TODO(jeffandersen): Remove when all endian todos are resolved.
-BUILD_ASSERT(__BYTE_ORDER__  == __ORDER_LITTLE_ENDIAN__);
+#ifndef SPDM_MAX_ASYM_PUB_KEY_SIZE
+// An (x || y) pair of ECDSA P521 coordinates.
+#define SPDM_MAX_ASYM_PUB_KEY_SIZE (2 * 66)
+#endif
 
-#endif  // SPDM_LITE_COMMON_DEFS_H_
+#endif  // SPDM_LITE_COMMON_CONFIG_H_

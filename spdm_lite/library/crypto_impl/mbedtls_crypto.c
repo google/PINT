@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include "spdm_lite/common/crypto_types.h"
+#include "spdm_lite/common/defs.h"
 
 #include "mbedtls/version.h"
 #if MBEDTLS_VERSION_MAJOR > 2
@@ -651,11 +652,23 @@ cleanup:
 
 int spdm_generate_asym_keypair(SpdmAsymPrivKey* priv_key,
                                SpdmAsymPubKey* pub_key) {
-  spdm_init_asym_pub_key(pub_key, SPDM_ASYM_ECDSA_ECC_NIST_P256);
+  BUILD_ASSERT(sizeof(pub_key->data) >= P256_SERIALIZED_POINT_SIZE);
+
+  int rc = generate_keypair(MBEDTLS_ECP_DP_SECP256R1, pub_key->data,
+                            priv_key->ecdsa_p256);
+  if (rc != 0) {
+    return rc;
+  }
+
+  rc = spdm_init_asym_pub_key(pub_key, SPDM_ASYM_ECDSA_ECC_NIST_P256,
+                              pub_key->data, P256_SERIALIZED_POINT_SIZE);
+  if (rc != 0) {
+    return rc;
+  }
+
   priv_key->alg = SPDM_ASYM_ECDSA_ECC_NIST_P256;
 
-  return generate_keypair(MBEDTLS_ECP_DP_SECP256R1, pub_key->ecdsa_p256,
-                          priv_key->ecdsa_p256);
+  return 0;
 }
 
 const SpdmCryptoSpec MBEDTLS_CRYPTO_SPEC = {

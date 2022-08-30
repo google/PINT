@@ -101,8 +101,7 @@ static int write_pub_key_msg(bool is_request, uint64_t vd_code,
   SPDM_VendorDefinedPubKeyMsg pub_key_msg = {};
   uint8_t* out;
 
-  uint16_t pub_key_size = spdm_get_asym_pub_key_size(pub_key->alg);
-  uint16_t rsp_len = sizeof(pub_key_msg) + pub_key_size;
+  uint16_t rsp_len = sizeof(pub_key_msg) + pub_key->size;
   uint32_t out_len = sizeof(vendor_defined_msg) + sizeof(rsp_len) + rsp_len;
 
   out = reserve_from_writer(output, out_len);
@@ -130,7 +129,7 @@ static int write_pub_key_msg(bool is_request, uint64_t vd_code,
   memcpy(out, &pub_key_msg, sizeof(pub_key_msg));
   out += sizeof(pub_key_msg);
 
-  memcpy(out, pub_key->data, pub_key_size);
+  memcpy(out, pub_key->data, pub_key->size);
   return 0;
 }
 
@@ -160,9 +159,8 @@ static int check_pub_key_msg(buffer input, bool is_request, uint64_t vd_code,
     return -1;
   }
 
-  uint16_t pub_key_size = spdm_get_asym_pub_key_size(alg);
-
-  if (payload.size != sizeof(pub_key_msg) + pub_key_size) {
+  if (payload.size < sizeof(pub_key_msg) ||
+      payload.size > sizeof(pub_key_msg) + sizeof(pub_key->data)) {
     return -1;
   }
 
@@ -172,10 +170,7 @@ static int check_pub_key_msg(buffer input, bool is_request, uint64_t vd_code,
     return -1;
   }
 
-  spdm_init_asym_pub_key(pub_key, alg);
-  consume_from_buffer(&payload, pub_key->data, pub_key_size);
-
-  return 0;
+  return spdm_init_asym_pub_key(pub_key, alg, payload.data, payload.size);
 }
 
 int spdm_write_get_pub_key_req(byte_writer* output) {

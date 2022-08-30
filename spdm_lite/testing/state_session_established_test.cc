@@ -133,9 +133,7 @@ TEST(SessionEstablished, AppTraffic) {
   ASSERT_EQ(
       0, memcmp(rsp_vendor_id.data, req_vendor_id.data(), rsp_vendor_id.size));
 
-  uint16_t pub_key_size = spdm_get_asym_pub_key_size(req_pub_key.alg);
-
-  ASSERT_EQ(payload.size, sizeof(Add2AppResponse) + pub_key_size);
+  ASSERT_EQ(payload.size, sizeof(Add2AppResponse) + req_pub_key.size);
 
   const auto* response = reinterpret_cast<const Add2AppResponse*>(payload.data);
 
@@ -144,7 +142,7 @@ TEST(SessionEstablished, AppTraffic) {
       0, memcmp(response->session_id.id, ctx.session.params.info.session_id.id,
                 sizeof(response->session_id.id)));
   EXPECT_EQ(0, memcmp(payload.data + sizeof(*response), req_pub_key.data,
-                      pub_key_size));
+                      req_pub_key.size));
 
   const SpdmNegotiatedAlgs* session_algs =
       &ctx.session.params.info.negotiated_algs;
