@@ -36,14 +36,8 @@ static uint8_t* get_scratch_space() {
 
 static int dispatch_request(void* ctx, bool is_secure_msg, const uint8_t* req,
                             size_t req_size, uint8_t* rsp, size_t* rsp_size) {
-  SpdmResponderContext* responder_ctx = (SpdmResponderContext*)ctx;
-
-  if (is_secure_msg) {
-    return spdm_dispatch_secure_request(responder_ctx, req, req_size, rsp,
-                                        rsp_size);
-  } else {
-    return spdm_dispatch_request(responder_ctx, req, req_size, rsp, rsp_size);
-  }
+  return spdm_dispatch_request((SpdmResponderContext*)ctx, is_secure_msg, req,
+                               req_size, rsp, rsp_size);
 }
 
 static const SpdmCapabilities HOST_CAPS = {

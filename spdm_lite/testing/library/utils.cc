@@ -88,8 +88,8 @@ int DispatchRequest(SpdmResponderContext* ctx, std::vector<uint8_t>& req,
   size_t output_size = 512;
   std::vector<uint8_t> output(output_size);
 
-  int rc = spdm_dispatch_request(ctx, req.data(), req.size(), output.data(),
-                                 &output_size);
+  int rc = spdm_dispatch_request(ctx, /*is_secure=*/false, req.data(),
+                                 req.size(), output.data(), &output_size);
   if (rc != 0) {
     return rc;
   }
@@ -121,9 +121,8 @@ int DispatchSecureRequest(SpdmResponderContext* ctx, SpdmSessionPhase phase,
   std::vector<uint8_t> output(512);
   size_t output_size = output.size();
 
-  rc = spdm_dispatch_secure_request(ctx, encrypted_req.data(),
-                                    encrypted_req.size(), output.data(),
-                                    &output_size);
+  rc = spdm_dispatch_request(ctx, /*is_secure=*/true, encrypted_req.data(),
+                             encrypted_req.size(), output.data(), &output_size);
   if (rc != 0) {
     std::cerr << "spdm_dispatch_secure_request failed: " << rc << std::endl;
     return rc;

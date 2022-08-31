@@ -99,7 +99,8 @@ TEST(WaitingForGetVersion, InvalidGetVersion) {
   size_t output_size = output.size();
 
   ASSERT_EQ(0, spdm_dispatch_request(
-                   &ctx, reinterpret_cast<const uint8_t*>(&get_version_msg),
+                   &ctx, /*is_secure=*/false,
+                   reinterpret_cast<const uint8_t*>(&get_version_msg),
                    sizeof(get_version_msg), output.data(), &output_size));
 
   buffer output_msg = {output.data(), (uint32_t)output_size};

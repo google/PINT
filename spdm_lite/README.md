@@ -38,14 +38,9 @@ responses. The scratch memory should be as large as
 
 ### Responders
 
-Responders are expected to call one of the following two functions upon receipt
-of an SPDM request:
-
-* `spdm_dispatch_request`
-* `spdm_dispatch_secure_request`
-
-It is the responsibility of the Responder to implement transport framing that
-distinguishes between secure and non-secure SPDM messages.
+Responders are expected to call `spdm_dispatch_request` upon receipt of an SPDM
+request. The transport binding used by the Responder must indicate whether or
+not the given SPDM request is encrypted.
 
 In addition, Responders are expected to provide a callback function of type
 `spdm_app_dispatch_request_fn`, which will be invoked upon receipt of a

@@ -182,8 +182,9 @@ cleanup:
   return rc;
 }
 
-int spdm_dispatch_request(SpdmResponderContext* ctx, const uint8_t* req,
-                          size_t req_size, uint8_t* rsp, size_t* rsp_size) {
+static int spdm_dispatch_plaintext_request(SpdmResponderContext* ctx,
+                                           const uint8_t* req, size_t req_size,
+                                           uint8_t* rsp, size_t* rsp_size) {
   buffer input = {req, req_size};
   byte_writer output = {rsp, *rsp_size, 0};
 
@@ -214,9 +215,9 @@ cleanup:
   return rc;
 }
 
-int spdm_dispatch_secure_request(SpdmResponderContext* ctx, const uint8_t* req,
-                                 size_t req_size, uint8_t* rsp,
-                                 size_t* rsp_size) {
+static int spdm_dispatch_secure_request(SpdmResponderContext* ctx,
+                                        const uint8_t* req, size_t req_size,
+                                        uint8_t* rsp, size_t* rsp_size) {
   SPDM_Preamble preamble;
   SpdmSessionPhase phase;
   SpdmSessionAeadKeys keys;
@@ -284,4 +285,14 @@ cleanup:
   memset(&keys, 0, sizeof(keys));
 
   return rc;
+}
+
+int spdm_dispatch_request(SpdmResponderContext* ctx, bool is_secure,
+                          const uint8_t* req, size_t req_size, uint8_t* rsp,
+                          size_t* rsp_size) {
+  if (is_secure) {
+    return spdm_dispatch_secure_request(ctx, req, req_size, rsp, rsp_size);
+  } else {
+    return spdm_dispatch_plaintext_request(ctx, req, req_size, rsp, rsp_size);
+  }
 }

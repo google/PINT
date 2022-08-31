@@ -101,14 +101,11 @@ int spdm_initialize_responder_context(
     void* responder_priv_key_ctx, spdm_app_dispatch_request_fn app_dispatch_fn);
 
 // Top-level request dispatcher. Ensures the version matches before invoking one
-// of the state-specific handlers.
-int spdm_dispatch_request(SpdmResponderContext* ctx, const uint8_t* req,
-                          size_t req_size, uint8_t* rsp, size_t* rsp_size);
-
-// Top-level request dispatcher for secure messages.
-int spdm_dispatch_secure_request(SpdmResponderContext* ctx, const uint8_t* req,
-                                 size_t req_size, uint8_t* rsp,
-                                 size_t* rsp_size);
+// of the state-specific handlers. `is_secure` indicates whether the incoming
+// command is an encrypted SPDM request.
+int spdm_dispatch_request(SpdmResponderContext* ctx, bool is_secure,
+                          const uint8_t* req, size_t req_size, uint8_t* rsp,
+                          size_t* rsp_size);
 
 #ifdef __cplusplus
 }
