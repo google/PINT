@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "spdm_lite/crypto_impl/dummy_crypto.h"
+#include "spdm_lite/testing/dummy_crypto.h"
 
 #include <string.h>
 

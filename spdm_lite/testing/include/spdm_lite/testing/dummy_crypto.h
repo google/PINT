@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SPDM_LITE_CRYPTO_IMPL_DUMMY_CRYPTO_H_
-#define SPDM_LITE_CRYPTO_IMPL_DUMMY_CRYPTO_H_
+#ifndef SPDM_LITE_TESTING_DUMMY_CRYPTO_H_
+#define SPDM_LITE_TESTING_DUMMY_CRYPTO_H_
 
 #include "spdm_lite/common/crypto_types.h"
 
@@ -33,4 +33,4 @@ extern const SpdmCryptoSpec DUMMY_CRYPTO_SPEC;
 }
 #endif  // __cplusplus
 
-#endif  // SPDM_LITE_CRYPTO_IMPL_DUMMY_CRYPTO_H_
+#endif  // SPDM_LITE_TESTING_DUMMY_CRYPTO_H_

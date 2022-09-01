@@ -86,12 +86,6 @@ target_link_libraries(responder
 add_library(raw_serialize STATIC
     library/crypto_impl/raw_serialize.c)
 
-add_library(dummy_crypto STATIC
-    library/crypto_impl/dummy_crypto.c)
-
-target_link_libraries(dummy_crypto
-    raw_serialize)
-
 add_library(mbedtls_crypto STATIC
     library/crypto_impl/mbedtls_crypto.c
     library/crypto_impl/mbedtls_helpers.c
@@ -105,6 +99,7 @@ target_link_libraries(mbedtls_crypto
 
 add_library(testing STATIC
     testing/library/add_2_app.c
+    testing/library/dummy_crypto.c
     testing/library/host_context.c
     testing/library/utils.cc)
 
