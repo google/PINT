@@ -36,6 +36,9 @@ Responder, as well as scratch memory used for staging encrypted requests and
 responses. The scratch memory should be as large as
 `(max request or response size + SPDM_SECURE_MESSAGE_OVERHEAD)`
 
+See `samples/requester_app.c` for some pseudocode illustrating how this can be
+done.
+
 ### Responders
 
 Responders are expected to call `spdm_dispatch_request` upon receipt of an SPDM
@@ -47,6 +50,9 @@ In addition, Responders are expected to provide a callback function of type
 vendor-defined command sent within an established secure session.
 
 This implementation currently only supports one active session at a time.
+
+See `samples/responder_app.c` for some pseudocode illustrating how this can be
+done.
 
 ### Mutual authentication
 
