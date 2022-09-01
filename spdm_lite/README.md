@@ -11,7 +11,7 @@ This is not an official Google product.
 On Debian and Ubuntu install the following packages:
 
 ```
-$ sudo apt install libmbedtls-dev cmake
+$ sudo apt install libmbedtls-dev libtss2-dev cmake
 ```
 
 ### Build and run tests

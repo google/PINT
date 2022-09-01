@@ -96,6 +96,12 @@ target_link_libraries(mbedtls_crypto
     mbedcrypto
     pthread)
 
+add_library(tpmt_public_serialize STATIC
+    library/crypto_impl/tpmt_public_serialize.c)
+
+target_link_libraries(tpmt_public_serialize
+    common
+    libtss2-mu.so)
 
 add_library(testing STATIC
     testing/library/add_2_app.c
@@ -124,7 +130,8 @@ set(TESTS
     state_waiting_for_key_exchange_test
     state_need_requester_key_test
     state_waiting_for_finish_test
-    state_session_established_test)
+    state_session_established_test
+    tpmt_public_serialize_test)
 
 set(TEST_LIBS
     testing
@@ -134,6 +141,7 @@ set(TEST_LIBS
     responder
     mbedtls_crypto
     raw_serialize
+    tpmt_public_serialize
     GTest::gtest_main)
 
 enable_testing()
