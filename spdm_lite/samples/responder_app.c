@@ -53,10 +53,8 @@ SpdmCryptoSpec crypto_spec = {
   ...
 };
 
-SpdmCapabilities responder_caps = {
-  .ct_exponent = 0,          // Timing parameter (currently unimplemented)
-  .data_transfer_size = ...  // Max payload size allowable by the transport.
-};
+// Place-holder for unimplemented features like max transport size.
+SpdmCapabilities responder_caps = {};
 
 // The key that will be used to sign SPDM messages.
 SpdmAsymPubKey signing_pub_key = ...;
