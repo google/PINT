@@ -69,9 +69,9 @@ Requesters and Responders are expected to implement an instance of
 These instances contain function pointers for low-level crypto primitives, as
 well as serialization and deserialization functions for asymmetric public keys.
 
-To customize the wire format and/or signing routine, users can provide an
-`SpdmAsymCryptoSpec`, and override `SPDM_MAX_SERIALIZED_ASYM_PUB_KEY_SIZE` in
-`include/spdm_lite/common/config.h`.
+Users should override `SPDM_MAX_SERIALIZED_ASYM_PUB_KEY_SIZE` in
+`include/spdm_lite/common/config.h` when providing a public key serialization
+routine.
 
 ## Parsers
 
