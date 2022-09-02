@@ -60,10 +60,8 @@ SpdmDispatchRequestCtx dispatch_ctx = {
   .scratch_size = sizeof(scratch_space),
 };
 
-SpdmCapabilities requester_caps = {
-  .ct_exponent = 0,          // Timing parameter (currently unimplemented)
-  .data_transfer_size = ...  // Max payload size allowable by the transport.
-};
+// Place-holder for unimplemented features like max transport size.
+SpdmCapabilities requester_caps = {};
 
 // The key that will be used to sign SPDM messages.
 SpdmAsymPubKey signing_pub_key = ...;
