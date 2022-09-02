@@ -16,6 +16,7 @@
 
 #include "EverParse.h"
 #include "SPDM.h"
+#include "spdm_lite/common/defs.h"
 
 static void ErrorHandler(const char* typename_s, const char* fieldname,
                          const char* reason, uint8_t* context,
@@ -172,11 +173,11 @@ int SpdmCheckKeyExchange(buffer* input, buffer* rest,
   return rc;
 }
 
-int SpdmCheckKeyExchangeRsp(
+int SpdmCheckKeyExchangeRspInternal(
     buffer* input, buffer* rest, uint32_t exchange_data_len, uint32_t hash_len,
     uint32_t signature_len, bool measurement_summary_hash_expected,
     bool responder_verify_data_expected, uint8_t* heartbeat_period,
-    const uint8_t** rsp_session_id, uint8_t* mut_auth_requested_flow,
+    const uint8_t** rsp_session_id, uint8_t* mut_auth_requested,
     uint8_t* slot_id, const uint8_t** exchange_data,
     const uint8_t** measurement_summary_hash, const uint8_t** opaque_data,
     uint32_t* opaque_data_len, const uint8_t** signature,
@@ -184,10 +185,39 @@ int SpdmCheckKeyExchangeRsp(
   SPDM_CHECK_BODY(SpdmValidateKeyExchangeRsp, exchange_data_len, hash_len,
                   signature_len, measurement_summary_hash_expected,
                   responder_verify_data_expected, heartbeat_period,
-                  (uint8_t**)rsp_session_id, mut_auth_requested_flow, slot_id,
+                  (uint8_t**)rsp_session_id, mut_auth_requested, slot_id,
                   (uint8_t**)exchange_data, (uint8_t**)measurement_summary_hash,
                   (uint8_t**)opaque_data, opaque_data_len, (uint8_t**)signature,
                   (uint8_t**)responder_verify_data, );
+}
+
+int SpdmCheckKeyExchangeRsp(
+    buffer* input, buffer* rest, uint32_t exchange_data_len, uint32_t hash_len,
+    uint32_t signature_len, bool measurement_summary_hash_expected,
+    bool responder_verify_data_expected, uint8_t* heartbeat_period,
+    const uint8_t** rsp_session_id, MutAuthRequestedFlag* mut_auth_requested,
+    uint8_t* slot_id, const uint8_t** exchange_data,
+    const uint8_t** measurement_summary_hash, const uint8_t** opaque_data,
+    uint32_t* opaque_data_len, const uint8_t** signature,
+    const uint8_t** responder_verify_data) {
+  BUILD_ASSERT(SPDM____MUT_AUTH_FLAG_NOT_REQUESTED ==
+               MUT_AUTH_FLAG_NOT_REQUESTED);
+  BUILD_ASSERT(SPDM____MUT_AUTH_FLAG_NO_ENCAPSULATED_FLOW ==
+               MUT_AUTH_FLAG_NO_ENCAPSULATED_FLOW);
+  BUILD_ASSERT(SPDM____MUT_AUTH_FLAG_ENCAPSULATED_FLOW ==
+               MUT_AUTH_FLAG_ENCAPSULATED_FLOW);
+  BUILD_ASSERT(SPDM____MUT_AUTH_FLAG_OPTIMIZED_FLOW ==
+               MUT_AUTH_FLAG_OPTIMIZED_FLOW);
+
+  uint8_t local_mut_auth_requested;
+  int rc = SpdmCheckKeyExchangeRspInternal(
+      input, rest, exchange_data_len, hash_len, signature_len,
+      measurement_summary_hash_expected, responder_verify_data_expected,
+      heartbeat_period, rsp_session_id, &local_mut_auth_requested, slot_id,
+      exchange_data, measurement_summary_hash, opaque_data, opaque_data_len,
+      signature, responder_verify_data);
+  *mut_auth_requested = local_mut_auth_requested;
+  return rc;
 }
 
 int SpdmCheckVendorDefinedRequest(buffer* input, buffer* rest,

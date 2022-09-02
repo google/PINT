@@ -24,7 +24,6 @@
 #include "spdm_lite/common/sign.h"
 #include "spdm_lite/common/utils.h"
 #include "spdm_lite/common/vendor_defined_pub_key.h"
-#include "spdm_lite/crypto_impl/mbedtls_crypto.h"
 #include "spdm_lite/everparse/SPDMWrapper.h"
 #include "spdm_lite/responder/responder.h"
 #include "spdm_lite/testing/host_context.h"
@@ -127,7 +126,7 @@ TEST(WaitingForKeyExchange, KeyExchange) {
 
   uint8_t heartbeat_period;
   const uint8_t* rsp_session_id;
-  uint8_t mut_auth_requested_flow;
+  MutAuthRequestedFlag mut_auth_requested_flow;
   uint8_t slot_id;
   const uint8_t* rsp_exchange_data;
   const uint8_t* measurement_summary_hash;
@@ -146,6 +145,10 @@ TEST(WaitingForKeyExchange, KeyExchange) {
              &rsp_session_id, &mut_auth_requested_flow, &slot_id,
              &rsp_exchange_data, &measurement_summary_hash, &opaque_data.data,
              &opaque_data.size, &signature, &responder_verify_data));
+
+  EXPECT_EQ(heartbeat_period, 0);
+  EXPECT_EQ(slot_id, 0);
+  EXPECT_EQ(mut_auth_requested_flow, MUT_AUTH_FLAG_NO_ENCAPSULATED_FLOW);
 
   std::vector<uint8_t> pub_key_digest =
       GetDigest(rsp_pub_key.data, rsp_pub_key.size);

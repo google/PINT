@@ -43,6 +43,14 @@ extern "C"
 
 #define SPDM____ERROR ((uint8_t)0x7FU)
 
+#define SPDM____MUT_AUTH_FLAG_NOT_REQUESTED ((uint8_t)0U)
+
+#define SPDM____MUT_AUTH_FLAG_NO_ENCAPSULATED_FLOW ((uint8_t)1U)
+
+#define SPDM____MUT_AUTH_FLAG_ENCAPSULATED_FLOW ((uint8_t)2U)
+
+#define SPDM____MUT_AUTH_FLAG_OPTIMIZED_FLOW ((uint8_t)3U)
+
     uint64_t
     SpdmValidateGetVersion(
         uint8_t *Ctxt,

@@ -8022,9 +8022,9 @@ SpdmValidateKeyExchangeRsp(
     uint8_t none = Input[(uint32_t)positionAfterrspSessionId0];
     BOOLEAN
     noneConstraintIsOk =
-        EverParseGetBitfield8(none, (uint32_t)0U, (uint32_t)1U) +
-            EverParseGetBitfield8(none, (uint32_t)1U, (uint32_t)2U) +
-            EverParseGetBitfield8(none, (uint32_t)2U, (uint32_t)3U) ==
+        (EverParseGetBitfield8(none, (uint32_t)0U, (uint32_t)1U) +
+         EverParseGetBitfield8(none, (uint32_t)1U, (uint32_t)2U) +
+         EverParseGetBitfield8(none, (uint32_t)2U, (uint32_t)3U)) <=
         (uint8_t)1U;
     uint64_t positionAfternone1 =
         EverParseCheckConstraintOk(noneConstraintIsOk, positionAfternone);
@@ -8035,18 +8035,24 @@ SpdmValidateKeyExchangeRsp(
     BOOLEAN ite0;
     if (EverParseGetBitfield8(none, (uint32_t)0U, (uint32_t)1U) == (uint8_t)1U)
     {
-        *OutMutAuthRequestedFlow = (uint8_t)0U;
+        *OutMutAuthRequestedFlow = SPDM____MUT_AUTH_FLAG_NO_ENCAPSULATED_FLOW;
         ite0 = TRUE;
     }
     else if (
         EverParseGetBitfield8(none, (uint32_t)1U, (uint32_t)2U) == (uint8_t)1U)
     {
-        *OutMutAuthRequestedFlow = (uint8_t)1U;
+        *OutMutAuthRequestedFlow = SPDM____MUT_AUTH_FLAG_ENCAPSULATED_FLOW;
+        ite0 = TRUE;
+    }
+    else if (
+        EverParseGetBitfield8(none, (uint32_t)2U, (uint32_t)3U) == (uint8_t)1U)
+    {
+        *OutMutAuthRequestedFlow = SPDM____MUT_AUTH_FLAG_OPTIMIZED_FLOW;
         ite0 = TRUE;
     }
     else
     {
-        *OutMutAuthRequestedFlow = (uint8_t)2U;
+        *OutMutAuthRequestedFlow = SPDM____MUT_AUTH_FLAG_NOT_REQUESTED;
         ite0 = TRUE;
     }
     if (!ite0)

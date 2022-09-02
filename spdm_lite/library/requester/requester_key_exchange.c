@@ -192,7 +192,7 @@ static int handle_key_exchange_rsp(const SpdmNegotiatedAlgs* negotiated_algs,
                                    SpdmSessionParams* session) {
   uint8_t heartbeat_period;
   const uint8_t* rsp_session_id;
-  uint8_t mut_auth_requested_flow;
+  MutAuthRequestedFlag mut_auth_requested_flow;
   uint8_t slot_id;
   const uint8_t* rsp_exchange_data;
   const uint8_t* measurement_summary_hash;
@@ -217,7 +217,8 @@ static int handle_key_exchange_rsp(const SpdmNegotiatedAlgs* negotiated_algs,
     return rc;
   }
 
-  if (heartbeat_period != 0 || mut_auth_requested_flow != 1 || slot_id != 0) {
+  if (heartbeat_period != 0 || slot_id != 0 ||
+      mut_auth_requested_flow != MUT_AUTH_FLAG_NO_ENCAPSULATED_FLOW) {
     return -1;
   }
 

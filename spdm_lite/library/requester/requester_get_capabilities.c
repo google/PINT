@@ -31,7 +31,6 @@ int spdm_get_capabilities(SpdmRequesterContext* ctx) {
   msg.max_spdm_message_size = ctx->requester_caps.data_transfer_size;
   msg.flags_ENCRYPT_CAP = 1;
   msg.flags_MAC_CAP = 1;
-  msg.flags_MUT_AUTH_CAP = 1;
   msg.flags_KEY_EX_CAP = 1;
 
   buffer req = {(const uint8_t*)&msg, sizeof(msg)};

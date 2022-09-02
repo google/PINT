@@ -55,6 +55,11 @@
 #define VENDOR_DEFINED_RESPONSE 0x7E
 #define ERROR 0x7F
 
+#define MUT_AUTH_FLAG_NOT_REQUESTED 0
+#define MUT_AUTH_FLAG_NO_ENCAPSULATED_FLOW 1
+#define MUT_AUTH_FLAG_ENCAPSULATED_FLOW 2
+#define MUT_AUTH_FLAG_OPTIMIZED_FLOW 3
+
 casetype _OptionalBuffer (Bool present, UINT32 size) {
   switch(present) {
     case true: UINT8 buffer[size];
@@ -740,18 +745,23 @@ entrypoint typedef struct _KeyExchangeRsp(
   UINT8 mut_auth_requested_optimized_flow : 1 {
     mut_auth_requested_no_encapsulated_flow +
     mut_auth_requested_encapsulated_flow +
-    mut_auth_requested_optimized_flow == 1
+    mut_auth_requested_optimized_flow <= 1
   } {:on-success
     if (mut_auth_requested_no_encapsulated_flow == 1) {
-      *out_mut_auth_requested_flow = 0;
+      *out_mut_auth_requested_flow = MUT_AUTH_FLAG_NO_ENCAPSULATED_FLOW;
       return true;
     } else {
       if (mut_auth_requested_encapsulated_flow == 1) {
-        *out_mut_auth_requested_flow = 1;
+        *out_mut_auth_requested_flow = MUT_AUTH_FLAG_ENCAPSULATED_FLOW;
         return true;
       } else {
-        *out_mut_auth_requested_flow = 2;
-        return true;
+        if (mut_auth_requested_optimized_flow == 1) {
+          *out_mut_auth_requested_flow = MUT_AUTH_FLAG_OPTIMIZED_FLOW;
+          return true;
+        } else {
+          *out_mut_auth_requested_flow = MUT_AUTH_FLAG_NOT_REQUESTED;
+          return true;
+        }
       }
     }
   };

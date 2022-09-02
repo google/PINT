@@ -37,7 +37,6 @@ static int write_capabilities(SpdmResponderContext* ctx,
 
   msg.flags_ENCRYPT_CAP = 1;
   msg.flags_MAC_CAP = 1;
-  msg.flags_MUT_AUTH_CAP = 1;
   msg.flags_KEY_EX_CAP = 1;
   msg.flags_ALIAS_CERT_CAP = 1;
 

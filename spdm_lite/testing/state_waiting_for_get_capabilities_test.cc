@@ -66,7 +66,7 @@ TEST(WaitingForGetCapabilities, GetCapabilities) {
   EXPECT_EQ(caps.ct_exponent, 0);
   EXPECT_EQ(caps.flags_ENCRYPT_CAP, 1);
   EXPECT_EQ(caps.flags_MAC_CAP, 1);
-  EXPECT_EQ(caps.flags_MUT_AUTH_CAP, 1);
+  EXPECT_EQ(caps.flags_MUT_AUTH_CAP, 0);
   EXPECT_EQ(caps.flags_KEY_EX_CAP, 1);
   EXPECT_EQ(caps.flags_ALIAS_CERT_CAP, 1);
   EXPECT_EQ(caps.data_transfer_size, SPDM_HOST_DATA_TRANSFER_SIZE);

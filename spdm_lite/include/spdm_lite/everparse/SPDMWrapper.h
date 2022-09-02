@@ -34,6 +34,13 @@ extern "C" {
 // is NULL, the function returns an error if any remaining un-parsed data is
 // left in the input buffer.
 
+typedef enum {
+  MUT_AUTH_FLAG_NOT_REQUESTED = 0,
+  MUT_AUTH_FLAG_NO_ENCAPSULATED_FLOW = 1,
+  MUT_AUTH_FLAG_ENCAPSULATED_FLOW = 2,
+  MUT_AUTH_FLAG_OPTIMIZED_FLOW = 3,
+} MutAuthRequestedFlag;
+
 int SpdmCheckGetVersion(buffer* input, buffer* rest);
 
 int SpdmCheckVersion(buffer* input, buffer* rest, uint8_t* entry_count,
@@ -106,7 +113,7 @@ int SpdmCheckKeyExchangeRsp(
     buffer* input, buffer* rest, uint32_t exchange_data_len, uint32_t hash_len,
     uint32_t signature_len, bool measurement_summary_hash_expected,
     bool responder_verify_data_expected, uint8_t* heartbeat_period,
-    const uint8_t** rsp_session_id, uint8_t* mut_auth_requested_flow,
+    const uint8_t** rsp_session_id, MutAuthRequestedFlag* mut_auth_requested,
     uint8_t* slot_id, const uint8_t** exchange_data,
     const uint8_t** measurement_summary_hash, const uint8_t** opaque_data,
     uint32_t* opaque_data_len, const uint8_t** signature,

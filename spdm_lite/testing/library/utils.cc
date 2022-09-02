@@ -178,7 +178,6 @@ std::vector<uint8_t> MakeGetCapabilities() {
       .ct_exponent = 0,
       .flags_ENCRYPT_CAP = 1,
       .flags_MAC_CAP = 1,
-      .flags_MUT_AUTH_CAP = 1,
       .flags_KEY_EX_CAP = 1,
       .data_transfer_size = SPDM_HOST_DATA_TRANSFER_SIZE,
       .max_spdm_message_size = SPDM_HOST_DATA_TRANSFER_SIZE,
