@@ -138,50 +138,21 @@ static int write_finish(SpdmRequesterContext* ctx,
 static int verify_finish_rsp(SpdmRequesterContext* ctx,
                              SpdmSessionParams* session,
                              SpdmHash* transcript_hash, buffer rsp) {
-  SpdmHashResult finish_key;
-  SpdmHashResult transcript_digest;
   const uint8_t* responder_verify_data;
 
   uint16_t hash_len =
       spdm_get_hash_size(session->info.negotiated_algs.hash_alg);
 
   int rc = SpdmCheckFinishRsp(&rsp, /*rest=*/NULL, hash_len,
-                              /*responder_verify_data_expected=*/true,
+                              /*responder_verify_data_expected=*/false,
                               &responder_verify_data);
   if (rc != 0) {
-    goto cleanup;
-  }
-
-  spdm_extend_hash(transcript_hash, rsp.data, sizeof(SPDM_FINISH_RSP));
-  rc = spdm_get_hash(transcript_hash, &transcript_digest);
-  if (rc != 0) {
-    goto cleanup;
-  }
-
-  rc = generate_finish_key(&ctx->dispatch_ctx.crypto_spec, session,
-                           /*originator=*/SPDM_RESPONDER, &finish_key);
-  if (rc != 0) {
-    goto cleanup;
-  }
-
-  rc = spdm_validate_hmac(&ctx->dispatch_ctx.crypto_spec, &finish_key,
-                          &transcript_digest, responder_verify_data);
-  if (rc != 0) {
-    goto cleanup;
+    return rc;
   }
 
   // Finalize TH_2
-  spdm_extend_hash(transcript_hash, responder_verify_data, hash_len);
-
-  rc = spdm_get_hash(transcript_hash, &session->th_2);
-  if (rc != 0) {
-    goto cleanup;
-  }
-
-cleanup:
-  memset(&finish_key, 0, sizeof(finish_key));
-
-  return rc;
+  spdm_extend_hash(transcript_hash, rsp.data, sizeof(SPDM_FINISH_RSP));
+  return spdm_get_hash(transcript_hash, &session->th_2);
 }
 
 int spdm_finish(SpdmRequesterContext* ctx, SpdmSessionParams* session,

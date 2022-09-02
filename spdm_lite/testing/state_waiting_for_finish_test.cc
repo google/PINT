@@ -110,30 +110,11 @@ TEST(WaitingForFinish, Finish) {
   const uint8_t* responder_verify_data;
   ASSERT_EQ(0, SpdmCheckFinishRsp(&output_msg, /*rest=*/nullptr,
                                   /*hash_len=*/SHA512_DIGEST_SIZE,
-                                  /*responder_verify_data_expected=*/true,
+                                  /*responder_verify_data_expected=*/false,
                                   &responder_verify_data));
-
-  SpdmMessageSecrets handshake_secrets;
-  SpdmHashResult finish_key;
-  ASSERT_EQ(0, spdm_generate_message_secrets(
-                   get_mbedtls_crypto_spec(), &ctx.session.params,
-                   SPDM_HANDSHAKE_PHASE, &handshake_secrets));
-
-  ASSERT_EQ(
-      0, spdm_generate_finished_key(get_mbedtls_crypto_spec(), SPDM_RESPONDER,
-                                    &handshake_secrets, &finish_key));
 
   spdm_extend_hash(&target_digest, reinterpret_cast<const uint8_t*>(rsp.data()),
                    sizeof(SPDM_FINISH_RSP));
-
-  transcript_digest = GetDigest(target_digest);
-  SpdmHashResult digest_result = GetHashResult(transcript_digest);
-  ASSERT_EQ(0, spdm_validate_hmac(&ctx.crypto_spec, &finish_key, &digest_result,
-                                  responder_verify_data));
-
-  spdm_extend_hash(&target_digest,
-                   reinterpret_cast<const uint8_t*>(responder_verify_data),
-                   SHA512_DIGEST_SIZE);
 
   transcript_digest = GetDigest(target_digest);
   EXPECT_EQ(0, memcmp(transcript_digest.data(), ctx.session.params.th_2.data,

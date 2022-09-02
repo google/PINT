@@ -73,15 +73,6 @@ cleanup:
 static int write_finish_rsp(const SpdmCryptoSpec* crypto_spec,
                             const SpdmSessionParams* session,
                             SpdmHash* transcript_hash, byte_writer* output) {
-  SpdmHashResult finish_key;
-  SpdmHashResult transcript_hash_result;
-
-  int rc = generate_finish_key(crypto_spec, session,
-                               /*originator=*/SPDM_RESPONDER, &finish_key);
-  if (rc != 0) {
-    goto cleanup;
-  }
-
   SPDM_FINISH_RSP msg;
 
   memset(&msg, 0, sizeof(msg));
@@ -89,42 +80,16 @@ static int write_finish_rsp(const SpdmCryptoSpec* crypto_spec,
   msg.preamble.version = SPDM_THIS_VER;
   msg.preamble.request_response_code = SPDM_CODE_FINISH_RSP;
 
-  const uint16_t hmac_size =
-      spdm_get_hash_size(session->info.negotiated_algs.hash_alg);
-
-  const uint32_t out_len = sizeof(msg) + hmac_size;
-
-  uint8_t* out = reserve_from_writer(output, out_len);
+  uint8_t* out = reserve_from_writer(output, sizeof(msg));
   if (out == NULL) {
-    rc = -1;
-    goto cleanup;
+    return -1;
   }
 
   memcpy(out, &msg, sizeof(msg));
+
   spdm_extend_hash(transcript_hash, &msg, sizeof(msg));
 
-  rc = spdm_get_hash(transcript_hash, &transcript_hash_result);
-  if (rc != 0) {
-    return rc;
-  }
-
-  out += sizeof(msg);
-
-  SpdmHashResult hmac;
-
-  rc = spdm_hmac(crypto_spec, &finish_key, &transcript_hash_result, &hmac);
-  if (rc != 0) {
-    goto cleanup;
-  }
-
-  memcpy(out, hmac.data, hmac_size);
-
-  spdm_extend_hash(transcript_hash, out, hmac_size);
-
-cleanup:
-  memset(&finish_key, 0, sizeof(finish_key));
-
-  return rc;
+  return 0;
 }
 
 int spdm_dispatch_request_waiting_for_finish(SpdmResponderContext* ctx,
