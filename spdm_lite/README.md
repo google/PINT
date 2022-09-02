@@ -73,6 +73,10 @@ Users should override `SPDM_MAX_SERIALIZED_ASYM_PUB_KEY_SIZE` in
 `include/spdm_lite/common/config.h` when providing a public key serialization
 routine.
 
+### Timing
+
+This library does not implement timing-related functionality.
+
 ## Parsers
 
 This library parses SPDM messages using
@@ -88,6 +92,5 @@ better integrate with the type system used in spdm-lite.
 *   Endian conversion
 *   Error codes / debug messages
 *   Max message size enforcement
-*   Timing (ct_exponent etc.)
 *   Customizable algorithm negotiation routine
 *   GET_CERTIFICATE / KEY_UPDATE / HEARTBEAT / CHUNK_SEND etc.

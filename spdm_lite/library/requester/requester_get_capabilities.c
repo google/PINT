@@ -26,7 +26,7 @@ int spdm_get_capabilities(SpdmRequesterContext* ctx) {
   msg.preamble.version = SPDM_THIS_VER;
   msg.preamble.request_response_code = SPDM_CODE_GET_CAPABILITIES;
 
-  msg.ct_exponent = ctx->requester_caps.ct_exponent;
+  msg.ct_exponent = 0;
   msg.data_transfer_size = ctx->requester_caps.data_transfer_size;
   msg.max_spdm_message_size = ctx->requester_caps.data_transfer_size;
   msg.flags_ENCRYPT_CAP = 1;
@@ -51,7 +51,7 @@ int spdm_get_capabilities(SpdmRequesterContext* ctx) {
   SPDM_CAPABILITIES caps;
   memcpy(&caps, rsp.data, sizeof(caps));
 
-  ctx->responder_caps.ct_exponent = caps.ct_exponent;
+  memset(&ctx->responder_caps, 0, sizeof(ctx->responder_caps));
   ctx->responder_caps.data_transfer_size = caps.data_transfer_size;
 
   if (caps.flags_ENCRYPT_CAP != 1 || caps.flags_MAC_CAP != 1 ||

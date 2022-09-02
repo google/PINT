@@ -63,7 +63,7 @@ TEST(WaitingForGetCapabilities, GetCapabilities) {
 
   SPDM_CAPABILITIES caps;
   memcpy(&caps, output_msg.data, sizeof(caps));
-  EXPECT_EQ(caps.ct_exponent, SPDM_HOST_CT_EXPONENT);
+  EXPECT_EQ(caps.ct_exponent, 0);
   EXPECT_EQ(caps.flags_ENCRYPT_CAP, 1);
   EXPECT_EQ(caps.flags_MAC_CAP, 1);
   EXPECT_EQ(caps.flags_MUT_AUTH_CAP, 1);
@@ -79,7 +79,6 @@ TEST(WaitingForGetCapabilities, GetCapabilities) {
   EXPECT_EQ(ctx_digest, expected_digest);
 
   EXPECT_EQ(ctx.state, STATE_WAITING_FOR_NEGOTIATE_ALGORITHMS);
-  EXPECT_EQ(ctx.requester_caps.ct_exponent, SPDM_HOST_CT_EXPONENT);
   EXPECT_EQ(ctx.requester_caps.data_transfer_size,
             SPDM_HOST_DATA_TRANSFER_SIZE);
 }

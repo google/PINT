@@ -175,7 +175,7 @@ std::vector<uint8_t> MakeGetCapabilities() {
               .version = 0x12,
               .request_response_code = SPDM_CODE_GET_CAPABILITIES,
           },
-      .ct_exponent = SPDM_HOST_CT_EXPONENT,
+      .ct_exponent = 0,
       .flags_ENCRYPT_CAP = 1,
       .flags_MAC_CAP = 1,
       .flags_MUT_AUTH_CAP = 1,

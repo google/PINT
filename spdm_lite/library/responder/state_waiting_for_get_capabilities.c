@@ -31,7 +31,7 @@ static int write_capabilities(SpdmResponderContext* ctx,
 
   msg.preamble.version = SPDM_THIS_VER;
   msg.preamble.request_response_code = SPDM_CODE_CAPABILITIES;
-  msg.ct_exponent = ctx->responder_caps.ct_exponent;
+  msg.ct_exponent = 0;
   msg.data_transfer_size = ctx->responder_caps.data_transfer_size;
   msg.max_spdm_message_size = msg.data_transfer_size;
 
@@ -71,7 +71,7 @@ int spdm_dispatch_request_waiting_for_get_capabilities(
 
   memcpy(&msg, input.data, sizeof(msg));
 
-  ctx->requester_caps.ct_exponent = msg.ct_exponent;
+  memset(&ctx->requester_caps, 0, sizeof(ctx->requester_caps));
   ctx->requester_caps.data_transfer_size = msg.data_transfer_size;
 
   rc = spdm_append_to_transcript(&ctx->negotiation_transcript, input.data,

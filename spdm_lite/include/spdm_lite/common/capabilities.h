@@ -18,7 +18,7 @@
 #include <stdint.h>
 
 typedef struct {
-  uint8_t ct_exponent;
+  // The maximum size of an SPDM payload, whether plaintext or encrypted.
   uint32_t data_transfer_size;
 } SpdmCapabilities;
 

@@ -44,7 +44,6 @@ static int dispatch_request(void* ctx, bool is_secure_msg, const uint8_t* req,
 }
 
 static const SpdmCapabilities HOST_CAPS = {
-    .ct_exponent = SPDM_HOST_CT_EXPONENT,
     .data_transfer_size = SPDM_HOST_DATA_TRANSFER_SIZE,
 };
 

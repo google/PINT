@@ -24,7 +24,6 @@
 extern "C" {
 #endif  // __cplusplus
 
-#define SPDM_HOST_CT_EXPONENT 10
 #define SPDM_HOST_DATA_TRANSFER_SIZE 1024
 
 // Returns a pointer to a crypto spec that includes the base mbedtls
