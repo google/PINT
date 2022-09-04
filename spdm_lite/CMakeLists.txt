@@ -6,6 +6,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DCMAKE_BUILD -I${CMAKE_CURRENT_SOURCE_DIR}/
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCMAKE_BUILD -I${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 set(TEST_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/testing/include")
+set(SAMPLE_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/samples/include")
 
 # GoogleTest requires at least C++14
 set(CMAKE_CXX_STANDARD 14)
@@ -103,6 +104,19 @@ target_link_libraries(tpmt_public_serialize
     common
     libtss2-mu.so)
 
+add_library(sample_app STATIC
+    samples/requester_app.c
+    samples/responder_app.c)
+
+target_link_libraries(sample_app
+    common
+    mbedtls_crypto
+    raw_serialize
+    requester
+    responder)
+
+target_include_directories(sample_app PUBLIC ${SAMPLE_INCLUDES})
+
 add_library(testing STATIC
     testing/library/add_2_app.c
     testing/library/dummy_crypto.c
@@ -124,6 +138,7 @@ target_include_directories(testing PUBLIC ${TEST_INCLUDES})
 set(TESTS
     requester_test
     spdm_parser_test
+    sample_app_test
     state_waiting_for_get_version_test
     state_waiting_for_get_capabilities_test
     state_waiting_for_negotiate_algorithms_test
@@ -141,6 +156,7 @@ set(TEST_LIBS
     responder
     mbedtls_crypto
     raw_serialize
+    sample_app
     tpmt_public_serialize
     GTest::gtest_main)
 
@@ -150,7 +166,7 @@ include(GoogleTest)
 
 foreach(TEST ${TESTS})
     add_executable(${TEST} testing/${TEST}.cc)
-    target_include_directories(${TEST} PUBLIC ${TEST_INCLUDES})
+    target_include_directories(${TEST} PUBLIC ${TEST_INCLUDES} ${SAMPLE_INCLUDES})
     target_link_libraries(${TEST} ${TEST_LIBS})
     gtest_discover_tests(${TEST})
 endforeach()

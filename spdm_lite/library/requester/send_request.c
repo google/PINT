@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "spdm_lite/requester/send_request.h"
+#include "send_request.h"
 
 #include <string.h>
 
@@ -46,18 +46,37 @@ cleanup:
   return rc;
 }
 
-int spdm_send_secure_request(const SpdmDispatchRequestCtx* dispatch_ctx,
+int spdm_send_request(const SpdmDispatchRequestCtx* ctx,
+                      SpdmScratchSpace scratch_space, bool is_secure_msg,
+                      buffer req, buffer* rsp) {
+  uint8_t* rsp_data = scratch_space.data;
+  size_t rsp_size = scratch_space.size;
+
+  int rc = ctx->dispatch_fn(ctx->dispatch_ctx, is_secure_msg, req.data,
+                            req.size, rsp_data, &rsp_size);
+  if (rc != 0) {
+    return rc;
+  }
+
+  rsp->data = rsp_data;
+  rsp->size = rsp_size;
+
+  return 0;
+}
+
+int spdm_send_secure_request(const SpdmDispatchRequestCtx* ctx,
+                             SpdmScratchSpace scratch_space,
                              SpdmSessionParams* session, SpdmSessionPhase phase,
                              buffer req, buffer* rsp) {
   SpdmSessionAeadKeys keys;
   int rc = 0;
 
-  if (dispatch_ctx->scratch_size < req.size + SPDM_SECURE_MESSAGE_OVERHEAD) {
+  if (scratch_space.size < req.size + SPDM_SECURE_MESSAGE_OVERHEAD) {
     rc = -1;
     goto cleanup;
   }
 
-  uint8_t* header = dispatch_ctx->scratch;
+  uint8_t* header = scratch_space.data;
 
   uint8_t* plaintext_start = header + sizeof(SPDM_SecuredMessageRecord);
   memmove(plaintext_start, req.data, req.size);
@@ -65,7 +84,7 @@ int spdm_send_secure_request(const SpdmDispatchRequestCtx* dispatch_ctx,
   byte_writer footer = {plaintext_start + req.size,
                         SPDM_MAX_SECURE_MESSAGE_FOOTER_LEN, 0};
 
-  rc = generate_session_keys(&dispatch_ctx->crypto_spec, session, phase,
+  rc = generate_session_keys(&ctx->crypto_spec, session, phase,
                              session->req_seq_num, session->rsp_seq_num, &keys);
   if (rc != 0) {
     goto cleanup;
@@ -73,9 +92,9 @@ int spdm_send_secure_request(const SpdmDispatchRequestCtx* dispatch_ctx,
 
   buffer msg_buf = {plaintext_start, req.size};
 
-  rc = spdm_encrypt_secure_message(
-      &dispatch_ctx->crypto_spec, &session->info.session_id,
-      session->req_seq_num, &keys.req_keys, header, msg_buf, &footer);
+  rc = spdm_encrypt_secure_message(&ctx->crypto_spec, &session->info.session_id,
+                                   session->req_seq_num, &keys.req_keys, header,
+                                   msg_buf, &footer);
   if (rc != 0) {
     goto cleanup;
   }
@@ -87,14 +106,13 @@ int spdm_send_secure_request(const SpdmDispatchRequestCtx* dispatch_ctx,
 
   buffer encrypted_req = {header, encrypted_msg_len};
 
-  rc = spdm_send_request(dispatch_ctx,
+  rc = spdm_send_request(ctx, scratch_space,
                          /*is_secure_msg=*/true, encrypted_req, rsp);
   if (rc != 0) {
     goto cleanup;
   }
 
-  rc = spdm_decrypt_secure_message(&dispatch_ctx->crypto_spec,
-                                   &session->info.session_id,
+  rc = spdm_decrypt_secure_message(&ctx->crypto_spec, &session->info.session_id,
                                    session->rsp_seq_num, &keys.rsp_keys, rsp);
   if (rc != 0) {
     goto cleanup;
@@ -106,21 +124,4 @@ cleanup:
   memset(&keys, 0, sizeof(keys));
 
   return rc;
-}
-
-int spdm_send_request(const SpdmDispatchRequestCtx* dispatch_ctx,
-                      bool is_secure_msg, buffer req, buffer* rsp) {
-  uint8_t* rsp_data = dispatch_ctx->scratch;
-  size_t rsp_size = dispatch_ctx->scratch_size;
-
-  int rc = dispatch_ctx->dispatch_fn(dispatch_ctx->ctx, is_secure_msg, req.data,
-                                     req.size, rsp_data, &rsp_size);
-  if (rc != 0) {
-    return rc;
-  }
-
-  rsp->data = rsp_data;
-  rsp->size = rsp_size;
-
-  return 0;
 }

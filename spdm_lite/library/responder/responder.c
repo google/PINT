@@ -62,14 +62,14 @@ static void reset_context_state(SpdmResponderContext* ctx) {
 
 int spdm_initialize_responder_context(
     SpdmResponderContext* ctx, const SpdmCryptoSpec* crypto_spec,
-    SpdmCapabilities responder_caps, const SpdmAsymPubKey* responder_pub_key,
-    void* responder_priv_key_ctx,
+    const SpdmCapabilities* responder_caps,
+    const SpdmAsymPubKey* responder_pub_key, void* responder_priv_key_ctx,
     spdm_app_dispatch_request_fn app_dispatch_fn) {
   memset(ctx, 0, sizeof(*ctx));
 
   ctx->crypto_spec = *crypto_spec;
 
-  ctx->responder_caps = responder_caps;
+  ctx->responder_caps = *responder_caps;
 
   int rc = spdm_validate_asym_pubkey(crypto_spec, responder_pub_key);
   if (rc != 0) {

@@ -26,14 +26,16 @@ extern "C" {
 
 #define SPDM_HOST_DATA_TRANSFER_SIZE 1024
 
+const SpdmCapabilities HOST_CAPS = {
+    .data_transfer_size = SPDM_HOST_DATA_TRANSFER_SIZE,
+};
+
 // Returns a pointer to a crypto spec that includes the base mbedtls
 // functionality, along with the signing and serialization helpers.
 const SpdmCryptoSpec* get_mbedtls_crypto_spec(void);
 
-void initialize_host_requester_context(SpdmAsymPrivKey* priv_key,
-                                       SpdmAsymPubKey* pub_key,
-                                       SpdmResponderContext* target_responder,
-                                       SpdmRequesterContext* ctx);
+void initialize_dispatch_req_ctx(SpdmResponderContext* target_responder,
+                                 SpdmDispatchRequestCtx* req_ctx);
 
 void initialize_host_responder_context(
     SpdmAsymPrivKey* priv_key, SpdmAsymPubKey* pub_key,

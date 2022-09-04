@@ -14,6 +14,8 @@
 
 #include <string.h>
 
+#include "requester_functions.h"
+#include "send_request.h"
 #include "spdm_lite/common/crypto.h"
 #include "spdm_lite/common/key_schedule.h"
 #include "spdm_lite/common/messages.h"
@@ -22,7 +24,6 @@
 #include "spdm_lite/common/version.h"
 #include "spdm_lite/everparse/SPDMWrapper.h"
 #include "spdm_lite/requester/requester.h"
-#include "spdm_lite/requester/send_request.h"
 
 static int generate_finish_key(const SpdmCryptoSpec* crypto_spec,
                                const SpdmSessionParams* session,
@@ -80,8 +81,7 @@ cleanup:
 }
 
 static int write_finish(SpdmRequesterContext* ctx,
-                        const SpdmSessionParams* session,
-                        SpdmHash* transcript_hash, byte_writer* output) {
+                        const SpdmSessionParams* session, byte_writer* output) {
   SPDM_FINISH msg = {};
 
   const uint16_t sig_size =
@@ -102,42 +102,41 @@ static int write_finish(SpdmRequesterContext* ctx,
   msg.param_2_slot_id = 0xFF;
 
   memcpy(out, &msg, sizeof(msg));
-  spdm_extend_hash(transcript_hash, out, sizeof(msg));
+  spdm_extend_hash(&ctx->transcript_hash, out, sizeof(msg));
   out += sizeof(msg);
 
   SpdmHashResult transcript_digest;
-  int rc = spdm_get_hash(transcript_hash, &transcript_digest);
+  int rc = spdm_get_hash(&ctx->transcript_hash, &transcript_digest);
   if (rc != 0) {
     return rc;
   }
 
-  rc = spdm_sign(&ctx->dispatch_ctx.crypto_spec,
+  rc = spdm_sign(&ctx->params->dispatch_ctx->crypto_spec,
                  session->info.negotiated_algs.asym_sign_alg,
-                 ctx->requester_priv_key_ctx,
+                 ctx->params->requester_priv_key_ctx,
                  /*my_role=*/SPDM_REQUESTER, &transcript_digest,
                  /*context=*/"finish signing", out, sig_size);
   if (rc != 0) {
     return rc;
   }
 
-  spdm_extend_hash(transcript_hash, out, sig_size);
+  spdm_extend_hash(&ctx->transcript_hash, out, sig_size);
   out += sig_size;
 
-  rc = hmac_finish_msg(&ctx->dispatch_ctx.crypto_spec, transcript_hash, session,
-                       out);
+  rc = hmac_finish_msg(&ctx->params->dispatch_ctx->crypto_spec,
+                       &ctx->transcript_hash, session, out);
   if (rc != 0) {
     return rc;
   }
 
-  spdm_extend_hash(transcript_hash, out, hmac_size);
+  spdm_extend_hash(&ctx->transcript_hash, out, hmac_size);
   out += hmac_size;
 
   return 0;
 }
 
 static int verify_finish_rsp(SpdmRequesterContext* ctx,
-                             SpdmSessionParams* session,
-                             SpdmHash* transcript_hash, buffer rsp) {
+                             SpdmSessionParams* session, buffer rsp) {
   const uint8_t* responder_verify_data;
 
   uint16_t hash_len =
@@ -151,22 +150,23 @@ static int verify_finish_rsp(SpdmRequesterContext* ctx,
   }
 
   // Finalize TH_2
-  spdm_extend_hash(transcript_hash, rsp.data, sizeof(SPDM_FINISH_RSP));
-  return spdm_get_hash(transcript_hash, &session->th_2);
+  spdm_extend_hash(&ctx->transcript_hash, rsp.data, sizeof(SPDM_FINISH_RSP));
+  return spdm_get_hash(&ctx->transcript_hash, &session->th_2);
 }
 
-int spdm_finish(SpdmRequesterContext* ctx, SpdmSessionParams* session,
-                SpdmHash* transcript_hash) {
-  byte_writer writer = {ctx->dispatch_ctx.scratch,
-                        ctx->dispatch_ctx.scratch_size, 0};
+int spdm_finish(SpdmRequesterContext* ctx, SpdmSessionParams* session) {
+  const SpdmRequesterSessionParams* params = ctx->params;
 
-  int rc = spdm_extend_hash_with_pub_key(
-      &ctx->dispatch_ctx.crypto_spec, transcript_hash, &ctx->requester_pub_key);
+  byte_writer writer = {params->scratch.data, params->scratch.size, 0};
+
+  int rc = spdm_extend_hash_with_pub_key(&params->dispatch_ctx->crypto_spec,
+                                         &ctx->transcript_hash,
+                                         &params->requester_pub_key);
   if (rc != 0) {
     return rc;
   }
 
-  rc = write_finish(ctx, session, transcript_hash, &writer);
+  rc = write_finish(ctx, session, &writer);
   if (rc != 0) {
     return rc;
   }
@@ -174,11 +174,11 @@ int spdm_finish(SpdmRequesterContext* ctx, SpdmSessionParams* session,
   buffer req = {writer.data, writer.bytes_written};
   buffer rsp;
 
-  rc = spdm_send_secure_request(&ctx->dispatch_ctx, session,
+  rc = spdm_send_secure_request(params->dispatch_ctx, params->scratch, session,
                                 SPDM_HANDSHAKE_PHASE, req, &rsp);
   if (rc != 0) {
     return rc;
   }
 
-  return verify_finish_rsp(ctx, session, transcript_hash, rsp);
+  return verify_finish_rsp(ctx, session, rsp);
 }

@@ -12,83 +12,149 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "spdm_lite/samples/requester_app.h"
+
+#include <stdio.h>
+
+#include "spdm_lite/samples/responder_app.h"
+#include "spdm_lite/common/crypto_types.h"
+#include "spdm_lite/crypto_impl/mbedtls_crypto.h"
+#include "spdm_lite/crypto_impl/mbedtls_sign.h"
+#include "spdm_lite/crypto_impl/raw_serialize.h"
 #include "spdm_lite/requester/requester.h"
 
+static SpdmSessionParams global_session;
+static bool global_session_initialized;
+
+// Amount of memory to allocate for scratch-space for each request.
+#define SCRATCH_SIZE 384
+
+// Sends a request to the Responder. `is_secure_msg` indicates whether `req`
+// holds an encrypted payload or whether it is a plaintext SPDM request. This
+// value should be reflected onto the transport, so the Responder can properly
+// handle the request.
 int dispatch_spdm_request(void* ctx, bool is_secure_msg, const uint8_t* req,
                           size_t req_size, uint8_t* rsp, size_t* rsp_size) {
-  // Sends a request to the Responder. `is_secure_msg` indicates whether `req`
-  // holds an encrypted payload or whether it is a plaintext SPDM request. This
-  // value should be reflected onto the transport, so the Responder can properly
-  // handle the request.
+  // This implementation ignores `ctx`, as it is unneeded.
+
+  return sample_app_dispatch_spdm_request(is_secure_msg, req, req_size, rsp,
+                                          rsp_size);
 }
 
-void* dispatch_ctx = ...;  // Passed to `dispatch_spdm_request`
+static SpdmDispatchRequestCtx* get_global_requester_ctx(void) {
+  static SpdmDispatchRequestCtx req_ctx;
+  static bool initialized = false;
 
-int sign_with_priv_key(SpdmAsymAlgorithm alg, void* ctx, const uint8_t* input,
-                       uint32_t input_len, uint8_t* sig, uint32_t sig_len) {
-  // Signs a given message with the private key referred to by `ctx`.
+  if (!initialized) {
+    req_ctx.crypto_spec = MBEDTLS_BASE_CRYPTO_SPEC;
+    req_ctx.crypto_spec.sign_with_priv_key = spdm_mbedtls_sign_with_priv_key;
+    req_ctx.crypto_spec.serialize_pub_key = spdm_raw_serialize_asym_key;
+    req_ctx.crypto_spec.deserialize_pub_key = spdm_raw_serialize_asym_key;
+
+    req_ctx.dispatch_fn = dispatch_spdm_request;
+    req_ctx.dispatch_ctx = NULL;  // Unused by `dispatch_spdm_request`.
+
+    initialized = true;
+  }
+
+  return &req_ctx;
 }
 
-int serialize_pub_key(SpdmAsymAlgorithm asym_alg, SpdmHashAlgorithm hash_alg,
-                      const uint8_t* in, uint16_t in_size, uint8_t* out,
-                      uint16_t* out_size) {
-  // Serializes the given public key for transmission across the wire.
+int sample_app_initialize_spdm_session(void) {
+  if (global_session_initialized) {
+    fprintf(stderr,
+            "sample_app_initialize_spdm_session failed: global session already "
+            "initialized\n");
+    return -1;
+  }
+
+  SpdmAsymPrivKey requester_priv_key;
+  uint8_t scratch_mem[SCRATCH_SIZE];
+
+  SpdmRequesterSessionParams params = {
+    .dispatch_ctx = get_global_requester_ctx(),
+    .requester_priv_key_ctx = &requester_priv_key,
+    .scratch = {scratch_mem, sizeof(scratch_mem)},
+  };
+
+  int rc = spdm_generate_asym_keypair(SPDM_ASYM_ECDSA_ECC_NIST_P256,
+                                      &requester_priv_key,
+                                      &params.requester_pub_key);
+  if (rc != 0) {
+    fprintf(stderr, "spdm_generate_asym_keypair failed on line %d, err %d\n",
+            __LINE__, rc);
+    return rc;
+  }
+
+  rc = spdm_establish_session(&params, &global_session);
+  if (rc != 0) {
+    fprintf(stderr, "spdm_establish_session failed on line %d, err %d\n",
+            __LINE__, rc);
+    return rc;
+  }
+
+  global_session_initialized = true;
+
+  return 0;
 }
 
-int deserialize_pub_key(SpdmAsymAlgorithm asym_alg, SpdmHashAlgorithm hash_alg,
-                        const uint8_t* in, uint16_t in_size, uint8_t* out,
-                        uint16_t* out_size) {
-  // Deserializes the given wire-format value into a public key.
+int sample_app_rot128_byte(uint8_t input, uint8_t* output) {
+  if (!global_session_initialized) {
+    fprintf(stderr,
+            "sample_app_rot128_byte failed: global session not initialized\n");
+    return -1;
+  }
+
+  uint8_t scratch_mem[SCRATCH_SIZE];
+  SpdmScratchSpace scratch_space = {scratch_mem, sizeof(scratch_mem)};
+
+  uint16_t standard_id = SAMPLE_APP_STANDARD_ID;
+  uint8_t vendor_id = SAMPLE_APP_VENDOR_ID;
+
+  size_t output_size = sizeof(*output);
+
+  int rc = spdm_dispatch_app_request(get_global_requester_ctx(), scratch_space,
+                                     &global_session, standard_id, &vendor_id,
+                                     sizeof(vendor_id), &input, sizeof(input),
+                                     output, &output_size);
+  if (rc != 0) {
+    fprintf(stderr, "spdm_dispatch_app_request failed on line %d, err %d\n",
+            __LINE__, rc);
+    return rc;
+  }
+
+  if (output_size != sizeof(*output)) {
+    fprintf(
+        stderr,
+        "sample_app_rot128_byte failed: not enough data written (expected %lu, "
+        "got %zu\n",
+        sizeof(*output), output_size);
+    return -1;
+  }
+
+  return 0;
 }
 
-SpdmCryptoSpec crypto_spec = {
-  // Provides implementations of all low-level crypto functions.
-  ...
-  .sign_with_priv_key = sign_with_priv_key,
-  .serialize_pub_key = serialize_pub_key,
-  .deserialize_pub_key = deserialize_pub_key,
-  ...
-};
+int sample_app_end_spdm_session(void) {
+  if (!global_session_initialized) {
+    fprintf(
+        stderr,
+        "sample_app_end_spdm_session failed: global session not initialized\n");
+    return -1;
+  }
 
-uint8_t scratch_space[(max payload size + SPDM_SECURE_MESSAGE_OVERHEAD)]
+  uint8_t scratch_mem[SCRATCH_SIZE];
+  SpdmScratchSpace scratch_space = {scratch_mem, sizeof(scratch_mem)};
 
-SpdmDispatchRequestCtx dispatch_ctx = {
-  .crypto_spec = crypto_spec,
-  .dispatch_fn = dispatch_spdm_request,
-  .ctx = dispatch_ctx,
-  .scratch = scratch_space,
-  .scratch_size = sizeof(scratch_space),
-};
+  int rc = spdm_end_session(get_global_requester_ctx(), scratch_space,
+                            &global_session);
+  if (rc != 0) {
+    fprintf(stderr, "spdm_end_session failed on line %d, err %d\n", __LINE__,
+            rc);
+    return rc;
+  }
 
-// Place-holder for unimplemented features like max transport size.
-SpdmCapabilities requester_caps = {};
+  global_session_initialized = false;
 
-// The key that will be used to sign SPDM messages.
-SpdmAsymPubKey signing_pub_key = ...;
-void* signing_priv_key_ctx = ...;
-
-// Initialize the Requester context.
-SpdmRequesterContext requester_ctx;
-spdm_initialize_requester_context(&requester_ctx, &dispatch_ctx, requester_caps,
-                                  &signing_pub_key, &signing_priv_key_ctx);
-
-// Establish the session and start sending application requests.
-SpdmSessionParams session;
-spdm_establish_session(&requester_ctx, &session);
-
-// All requests are wrapped within a vendor-defined command.
-uint16_t standard_id = ...;
-uint8_t vendor_id[] = ...;
-
-uint8_t request[] = ...;
-uint8_t response_buf[...];
-size_t response_size = sizeof(response_buf);
-
-spdm_dispatch_app_request(&dispatch_ctx, &session, standard_id, vendor_id,
-                          sizeof(vendor_id), request, sizeof(request),
-                          response_buf, &response_size);
-
-// [Handle response]
-
-// Tear down session
-spdm_end_session(&dispatch_ctx, &session);
+  return 0;
+}

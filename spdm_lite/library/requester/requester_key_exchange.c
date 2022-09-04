@@ -14,6 +14,8 @@
 
 #include <string.h>
 
+#include "requester_functions.h"
+#include "send_request.h"
 #include "spdm_lite/common/crypto.h"
 #include "spdm_lite/common/key_schedule.h"
 #include "spdm_lite/common/messages.h"
@@ -24,7 +26,6 @@
 #include "spdm_lite/common/version.h"
 #include "spdm_lite/everparse/SPDMWrapper.h"
 #include "spdm_lite/requester/requester.h"
-#include "spdm_lite/requester/send_request.h"
 
 static int write_key_exchange(const SpdmSelfKeyExchangeParams* params,
                               byte_writer* output) {
@@ -278,19 +279,19 @@ static int handle_key_exchange_rsp(const SpdmNegotiatedAlgs* negotiated_algs,
   return 0;
 }
 
-int spdm_key_exchange(SpdmRequesterContext* ctx, SpdmSessionParams* session,
-                      SpdmHash* transcript_hash) {
+int spdm_key_exchange(SpdmRequesterContext* ctx, SpdmSessionParams* session) {
+  const SpdmRequesterSessionParams* params = ctx->params;
+
   SpdmSelfKeyExchangeParams my_params;
 
-  int rc = spdm_generate_session_params(&ctx->dispatch_ctx.crypto_spec,
+  int rc = spdm_generate_session_params(&params->dispatch_ctx->crypto_spec,
                                         session->info.negotiated_algs.dhe_alg,
                                         &my_params);
   if (rc != 0) {
     goto cleanup;
   }
 
-  byte_writer writer = {ctx->dispatch_ctx.scratch,
-                        ctx->dispatch_ctx.scratch_size, 0};
+  byte_writer writer = {params->scratch.data, params->scratch.size, 0};
 
   rc = write_key_exchange(&my_params, &writer);
   if (rc != 0) {
@@ -300,31 +301,32 @@ int spdm_key_exchange(SpdmRequesterContext* ctx, SpdmSessionParams* session,
   buffer req = {writer.data, writer.bytes_written};
   buffer rsp;
 
-  rc = spdm_initialize_transcript_hash(
-      &ctx->dispatch_ctx.crypto_spec, session->info.negotiated_algs.hash_alg,
-      &ctx->negotiation_transcript, transcript_hash);
+  rc = spdm_initialize_transcript_hash(&params->dispatch_ctx->crypto_spec,
+                                       session->info.negotiated_algs.hash_alg,
+                                       &ctx->negotiation_transcript,
+                                       &ctx->transcript_hash);
   if (rc != 0) {
     return rc;
   }
 
-  rc = spdm_extend_hash_with_pub_key(&ctx->dispatch_ctx.crypto_spec,
-                                     transcript_hash,
+  rc = spdm_extend_hash_with_pub_key(&params->dispatch_ctx->crypto_spec,
+                                     &ctx->transcript_hash,
                                      &session->info.peer_pub_key);
   if (rc != 0) {
     return rc;
   }
 
-  spdm_extend_hash(transcript_hash, req.data, req.size);
+  spdm_extend_hash(&ctx->transcript_hash, req.data, req.size);
 
-  rc =
-      spdm_send_request(&ctx->dispatch_ctx, /*is_secure_msg=*/false, req, &rsp);
+  rc = spdm_send_request(params->dispatch_ctx, params->scratch,
+                         /*is_secure_msg=*/false, req, &rsp);
   if (rc != 0) {
     goto cleanup;
   }
 
   rc = handle_key_exchange_rsp(&session->info.negotiated_algs,
-                               &ctx->dispatch_ctx.crypto_spec, rsp,
-                               transcript_hash, &my_params, session);
+                               &params->dispatch_ctx->crypto_spec, rsp,
+                               &ctx->transcript_hash, &my_params, session);
   if (rc != 0) {
     goto cleanup;
   }

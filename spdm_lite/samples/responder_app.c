@@ -12,68 +12,102 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "spdm_lite/samples/responder_app.h"
+
+#include <stdio.h>
+
+#include "spdm_lite/crypto_impl/mbedtls_crypto.h"
+#include "spdm_lite/crypto_impl/mbedtls_sign.h"
+#include "spdm_lite/crypto_impl/raw_serialize.h"
 #include "spdm_lite/responder/responder.h"
 
-int dispatch_app_request(const SpdmSessionInfo* session_info,
-                         uint16_t standard_id, const uint8_t* vendor_id,
-                         size_t vendor_id_size, const uint8_t* payload,
-                         size_t payload_size, uint8_t* output,
-                         size_t* output_size) {
-  // Handle any application request that comes over a secure SPDM session.
-  // `session_info` holds information such as the peer's public key and the
-  // negotiated algorithms.
-  //
-  // All requests are encapsulated within a vendor-defined command;
-  // `standard_id` and `vendor_id` indicate what kind of request came through.
+// Handle application requests that comes over a secure SPDM session.
+// `session_info` holds information such as the peer's public key and the
+// negotiated algorithms.
+static int handle_rot13_request(const SpdmSessionInfo* session_info,
+                                uint16_t standard_id, const uint8_t* vendor_id,
+                                size_t vendor_id_size, const uint8_t* payload,
+                                size_t payload_size, uint8_t* output,
+                                size_t* output_size) {
+  if (standard_id != SAMPLE_APP_STANDARD_ID) {
+    fprintf(stderr,
+            "handle_rot13_request failed, expected standard_id %d, got %d\n",
+            SAMPLE_APP_STANDARD_ID, standard_id);
+    return -1;
+  }
+
+  if (vendor_id_size != 1 || vendor_id[0] != SAMPLE_APP_VENDOR_ID) {
+    fprintf(stderr,
+            "handle_rot13_request failed, expected vendor_id %d, got %zu bytes "
+            "starting with %d\n",
+            SAMPLE_APP_VENDOR_ID, vendor_id_size, vendor_id[0]);
+    return -1;
+  }
+
+  if (payload_size != 1 || *output_size < 1) {
+    fprintf(stderr,
+            "handle_rot13_request failed, expected payload size %d, got %zu "
+            "with output buffer size %zu\n",
+            1, payload_size, *output_size);
+    return -1;
+  }
+
+  // Perform ROT-128 on the input.
+  uint8_t input_val = payload[0];
+  uint8_t output_val = input_val + 128;
+
+  *output = output_val;
+  *output_size = 1;
+
+  return 0;
 }
 
-int sign_with_priv_key(SpdmAsymAlgorithm alg, void* ctx, const uint8_t* input,
-                       uint32_t input_len, uint8_t* sig, uint32_t sig_len) {
-  // Signs a given message with the private key referred to by `ctx`.
+static SpdmResponderContext* get_global_responder_ctx(void) {
+  static SpdmResponderContext ctx;
+  static SpdmAsymPrivKey responder_priv_key;
+  static bool initialized;
+
+  if (!initialized) {
+    SpdmCryptoSpec crypto_spec = MBEDTLS_BASE_CRYPTO_SPEC;
+    crypto_spec.sign_with_priv_key = spdm_mbedtls_sign_with_priv_key;
+    crypto_spec.serialize_pub_key = spdm_raw_serialize_asym_key;
+    crypto_spec.deserialize_pub_key = spdm_raw_serialize_asym_key;
+
+    // Place-holder for unimplemented features like max transport size.
+    SpdmCapabilities responder_caps = {};
+
+    SpdmAsymPubKey responder_pub_key;
+    int rc = spdm_generate_asym_keypair(
+        SPDM_ASYM_ECDSA_ECC_NIST_P256, &responder_priv_key, &responder_pub_key);
+    if (rc != 0) {
+      fprintf(stderr, "spdm_generate_asym_keypair failed on line %d, err %d\n",
+              __LINE__, rc);
+      return NULL;
+    }
+
+    rc = spdm_initialize_responder_context(
+        &ctx, &crypto_spec, &responder_caps, &responder_pub_key,
+        &responder_priv_key, handle_rot13_request);
+    if (rc != 0) {
+      fprintf(stderr,
+              "spdm_initialize_responder_context failed on line %d, err %d\n",
+              __LINE__, rc);
+      return NULL;
+    }
+
+    initialized = true;
+  }
+
+  return &ctx;
 }
 
-int serialize_pub_key(SpdmAsymAlgorithm asym_alg, SpdmHashAlgorithm hash_alg,
-                      const uint8_t* in, uint16_t in_size, uint8_t* out,
-                      uint16_t* out_size) {
-  // Serializes the given public key for transmission across the wire.
+int sample_app_dispatch_spdm_request(bool is_secure, const uint8_t* req,
+                                     size_t req_size, uint8_t* rsp,
+                                     size_t* rsp_size) {
+  SpdmResponderContext* ctx = get_global_responder_ctx();
+  if (ctx == NULL) {
+    return -1;
+  }
+
+  return spdm_dispatch_request(ctx, is_secure, req, req_size, rsp, rsp_size);
 }
-
-int deserialize_pub_key(SpdmAsymAlgorithm asym_alg, SpdmHashAlgorithm hash_alg,
-                        const uint8_t* in, uint16_t in_size, uint8_t* out,
-                        uint16_t* out_size) {
-  // Deserializes the given wire-format value into a public key.
-}
-
-SpdmCryptoSpec crypto_spec = {
-  // Provides implementations of all low-level crypto functions.
-  ...
-  .sign_with_priv_key = sign_with_priv_key,
-  .serialize_pub_key = serialize_pub_key,
-  .deserialize_pub_key = deserialize_pub_key,
-  ...
-};
-
-// Place-holder for unimplemented features like max transport size.
-SpdmCapabilities responder_caps = {};
-
-// The key that will be used to sign SPDM messages.
-SpdmAsymPubKey signing_pub_key = ...;
-void* signing_priv_key_ctx = ...;
-
-// Initialize the Responder context.
-SpdmResponderContext responer_ctx;
-spdm_initialize_responder_context(&responer_ctx, &crypto_spec, responder_caps,
-                                  &signing_pub_key, &signing_priv_key_ctx,
-                                  dispatch_app_request);
-
-// Handle incoming SPDM request.
-bool is_secure = ...;       // Sensed from the transport.
-uint8_t* request = ...;    // Holds either an encrypted or a plaintext payload.
-size_t request_size = ...;
-uint8_t response_buf[...];  // Location to write the response.
-size_t response_size = sizeof(response_buf);
-
-spdm_dispatch_request(&responer_ctx, is_secure, request, request_size,
-                      response_buf, &response_size);
-
-// [Write response to the transport]

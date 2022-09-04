@@ -16,6 +16,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "spdm_lite/common/crypto_types.h"
 #include "spdm_lite/crypto_impl/mbedtls_crypto.h"
@@ -24,28 +25,18 @@
 #include "spdm_lite/requester/requester.h"
 #include "spdm_lite/responder/responder.h"
 
-#define SCRATCH_SIZE 1024
-
-static uint8_t* get_scratch_space() {
-  static uint8_t* scratch_space;
-  static bool initialized;
-
-  if (!initialized) {
-    scratch_space = malloc(SCRATCH_SIZE);
-  }
-
-  return scratch_space;
-}
-
 static int dispatch_request(void* ctx, bool is_secure_msg, const uint8_t* req,
                             size_t req_size, uint8_t* rsp, size_t* rsp_size) {
   return spdm_dispatch_request((SpdmResponderContext*)ctx, is_secure_msg, req,
                                req_size, rsp, rsp_size);
 }
 
-static const SpdmCapabilities HOST_CAPS = {
-    .data_transfer_size = SPDM_HOST_DATA_TRANSFER_SIZE,
-};
+void initialize_dispatch_req_ctx(SpdmResponderContext* target_responder,
+                                 SpdmDispatchRequestCtx* req_ctx) {
+  req_ctx->crypto_spec = *get_mbedtls_crypto_spec();
+  req_ctx->dispatch_fn = dispatch_request,
+  req_ctx->dispatch_ctx = target_responder;
+}
 
 const SpdmCryptoSpec* get_mbedtls_crypto_spec(void) {
   static SpdmCryptoSpec spec;
@@ -63,27 +54,6 @@ const SpdmCryptoSpec* get_mbedtls_crypto_spec(void) {
   return &spec;
 }
 
-void initialize_host_requester_context(SpdmAsymPrivKey* priv_key,
-                                       SpdmAsymPubKey* pub_key,
-                                       SpdmResponderContext* target_responder,
-                                       SpdmRequesterContext* ctx) {
-  int rc = spdm_generate_asym_keypair(SPDM_ASYM_ECDSA_ECC_NIST_P256, priv_key,
-                                      pub_key);
-  assert(rc == 0);
-
-  SpdmDispatchRequestCtx dispatch_ctx = {
-      .crypto_spec = *get_mbedtls_crypto_spec(),
-      .dispatch_fn = dispatch_request,
-      .ctx = target_responder,
-      .scratch = get_scratch_space(),
-      .scratch_size = SCRATCH_SIZE,
-  };
-
-  rc = spdm_initialize_requester_context(ctx, &dispatch_ctx, HOST_CAPS, pub_key,
-                                         priv_key);
-  assert(rc == 0);
-}
-
 void initialize_host_responder_context(SpdmAsymPrivKey* priv_key,
                                        SpdmAsymPubKey* pub_key,
                                        SpdmResponderContext* ctx,
@@ -91,7 +61,7 @@ void initialize_host_responder_context(SpdmAsymPrivKey* priv_key,
   spdm_generate_asym_keypair(SPDM_ASYM_ECDSA_ECC_NIST_P256, priv_key, pub_key);
 
   int rc = spdm_initialize_responder_context(
-      ctx, get_mbedtls_crypto_spec(), HOST_CAPS, pub_key, priv_key, app_fn);
+      ctx, get_mbedtls_crypto_spec(), &HOST_CAPS, pub_key, priv_key, app_fn);
   assert(rc == 0);
   (void)rc;
 }

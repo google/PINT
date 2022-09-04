@@ -97,8 +97,9 @@ typedef struct {
 
 int spdm_initialize_responder_context(
     SpdmResponderContext* ctx, const SpdmCryptoSpec* crypto_spec,
-    SpdmCapabilities responder_caps, const SpdmAsymPubKey* responder_pub_key,
-    void* responder_priv_key_ctx, spdm_app_dispatch_request_fn app_dispatch_fn);
+    const SpdmCapabilities* responder_caps,
+    const SpdmAsymPubKey* responder_pub_key, void* responder_priv_key_ctx,
+    spdm_app_dispatch_request_fn app_dispatch_fn);
 
 // Top-level request dispatcher. Ensures the version matches before invoking one
 // of the state-specific handlers. `is_secure` indicates whether the incoming

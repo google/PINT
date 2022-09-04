@@ -14,12 +14,13 @@
 
 #include <string.h>
 
+#include "requester_functions.h"
+#include "send_request.h"
 #include "spdm_lite/common/messages.h"
 #include "spdm_lite/common/transcript.h"
 #include "spdm_lite/common/version.h"
 #include "spdm_lite/everparse/SPDMWrapper.h"
 #include "spdm_lite/requester/requester.h"
-#include "spdm_lite/requester/send_request.h"
 
 static int check_version(uint8_t entry_count, const uint8_t* entries) {
   for (int i = 0; i < entry_count; ++i) {
@@ -47,6 +48,8 @@ static int check_version(uint8_t entry_count, const uint8_t* entries) {
 }
 
 int spdm_get_version(SpdmRequesterContext* ctx) {
+  const SpdmRequesterSessionParams* params = ctx->params;
+
   SPDM_GET_VERSION msg = {};
 
   msg.preamble.version = 0x10;
@@ -55,8 +58,8 @@ int spdm_get_version(SpdmRequesterContext* ctx) {
   buffer req = {(const uint8_t*)&msg, sizeof(msg)};
   buffer rsp;
 
-  int rc =
-      spdm_send_request(&ctx->dispatch_ctx, /*is_secure_msg=*/false, req, &rsp);
+  int rc = spdm_send_request(params->dispatch_ctx, params->scratch,
+                             /*is_secure_msg=*/false, req, &rsp);
   if (rc != 0) {
     return rc;
   }

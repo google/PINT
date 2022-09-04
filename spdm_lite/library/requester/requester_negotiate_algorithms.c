@@ -14,6 +14,8 @@
 
 #include <string.h>
 
+#include "requester_functions.h"
+#include "send_request.h"
 #include "spdm_lite/common/algorithms.h"
 #include "spdm_lite/common/crypto_types.h"
 #include "spdm_lite/common/messages.h"
@@ -23,7 +25,6 @@
 #include "spdm_lite/common/version.h"
 #include "spdm_lite/everparse/SPDMWrapper.h"
 #include "spdm_lite/requester/requester.h"
-#include "spdm_lite/requester/send_request.h"
 
 static int write_negotiate_algorithms(SpdmSupportedAlgs* supported_algs,
                                       byte_writer* output) {
@@ -142,12 +143,13 @@ static int check_negotiated_algs(const SpdmNegotiatedAlgs* negotiated_algs) {
 
 int spdm_negotiate_algorithms(SpdmRequesterContext* ctx,
                               SpdmSessionParams* session) {
-  SpdmSupportedAlgs my_algs;
-  spdm_get_my_supported_algs(&ctx->dispatch_ctx.crypto_spec,
-                             &ctx->requester_pub_key, &my_algs);
+  const SpdmRequesterSessionParams* params = ctx->params;
 
-  byte_writer writer = {ctx->dispatch_ctx.scratch,
-                        ctx->dispatch_ctx.scratch_size, 0};
+  SpdmSupportedAlgs my_algs;
+  spdm_get_my_supported_algs(&params->dispatch_ctx->crypto_spec,
+                             &params->requester_pub_key, &my_algs);
+
+  byte_writer writer = {params->scratch.data, params->scratch.size, 0};
 
   int rc = write_negotiate_algorithms(&my_algs, &writer);
   if (rc != 0) {
@@ -163,8 +165,8 @@ int spdm_negotiate_algorithms(SpdmRequesterContext* ctx,
     return rc;
   }
 
-  rc =
-      spdm_send_request(&ctx->dispatch_ctx, /*is_secure_msg=*/false, req, &rsp);
+  rc = spdm_send_request(params->dispatch_ctx, params->scratch,
+                         /*is_secure_msg=*/false, req, &rsp);
   if (rc != 0) {
     return rc;
   }

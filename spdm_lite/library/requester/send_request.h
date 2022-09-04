@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SPDM_LITE_REQUESTER_SEND_REQUEST_H_
-#define SPDM_LITE_REQUESTER_SEND_REQUEST_H_
+#ifndef SPDM_LITE_LIBRARY_REQUESTER_SEND_REQUEST_H_
+#define SPDM_LITE_LIBRARY_REQUESTER_SEND_REQUEST_H_
 
 #include <stdbool.h>
 
@@ -25,12 +25,14 @@
 extern "C" {
 #endif  // __cplusplus
 
-// The response is stored in `dispatch_ctx->scratch_buffer`
-int spdm_send_request(const SpdmDispatchRequestCtx* dispatch_ctx,
-                      bool is_secure_msg, buffer req, buffer* rsp);
+// The response is stored in `ctx->scratch_buffer`
+int spdm_send_request(const SpdmDispatchRequestCtx* ctx,
+                      SpdmScratchSpace scratch_space, bool is_secure_msg,
+                      buffer req, buffer* rsp);
 
-// The response is stored in `dispatch_ctx->scratch_buffer`
-int spdm_send_secure_request(const SpdmDispatchRequestCtx* dispatch_ctx,
+// The response is stored in `ctx->scratch_buffer`
+int spdm_send_secure_request(const SpdmDispatchRequestCtx* ctx,
+                             SpdmScratchSpace scratch_space,
                              SpdmSessionParams* session, SpdmSessionPhase phase,
                              buffer req, buffer* rsp);
 
@@ -38,4 +40,4 @@ int spdm_send_secure_request(const SpdmDispatchRequestCtx* dispatch_ctx,
 }
 #endif  // __cplusplus
 
-#endif  // SPDM_LITE_REQUESTER_SEND_REQUEST_H_
+#endif  // SPDM_LITE_LIBRARY_REQUESTER_SEND_REQUEST_H_

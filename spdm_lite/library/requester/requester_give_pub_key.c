@@ -15,17 +15,19 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "requester_functions.h"
+#include "send_request.h"
 #include "spdm_lite/common/utils.h"
 #include "spdm_lite/common/vendor_defined_pub_key.h"
 #include "spdm_lite/requester/requester.h"
-#include "spdm_lite/requester/send_request.h"
 
 int spdm_give_pub_key(SpdmRequesterContext* ctx, SpdmSessionParams* session) {
-  byte_writer writer = {ctx->dispatch_ctx.scratch,
-                        ctx->dispatch_ctx.scratch_size, 0};
+  const SpdmRequesterSessionParams* params = ctx->params;
+
+  byte_writer writer = {params->scratch.data, params->scratch.size, 0};
 
   int rc = spdm_write_give_pub_key_req(
-      &ctx->dispatch_ctx.crypto_spec, &ctx->requester_pub_key,
+      &params->dispatch_ctx->crypto_spec, &params->requester_pub_key,
       session->info.negotiated_algs.hash_alg, &writer);
   if (rc != 0) {
     return rc;
@@ -34,7 +36,7 @@ int spdm_give_pub_key(SpdmRequesterContext* ctx, SpdmSessionParams* session) {
   buffer req = {writer.data, writer.bytes_written};
   buffer rsp;
 
-  rc = spdm_send_secure_request(&ctx->dispatch_ctx, session,
+  rc = spdm_send_secure_request(params->dispatch_ctx, params->scratch, session,
                                 SPDM_HANDSHAKE_PHASE, req, &rsp);
   if (rc != 0) {
     return rc;

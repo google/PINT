@@ -14,15 +14,17 @@
 
 #include <string.h>
 
+#include "requester_functions.h"
+#include "send_request.h"
 #include "spdm_lite/common/crypto.h"
 #include "spdm_lite/common/utils.h"
 #include "spdm_lite/common/vendor_defined_pub_key.h"
 #include "spdm_lite/requester/requester.h"
-#include "spdm_lite/requester/send_request.h"
 
 int spdm_get_pub_key(SpdmRequesterContext* ctx, SpdmSessionParams* session) {
-  byte_writer writer = {ctx->dispatch_ctx.scratch,
-                        ctx->dispatch_ctx.scratch_size, 0};
+  const SpdmRequesterSessionParams* params = ctx->params;
+
+  byte_writer writer = {params->scratch.data, params->scratch.size, 0};
 
   int rc = spdm_write_get_pub_key_req(&writer);
   if (rc != 0) {
@@ -32,14 +34,14 @@ int spdm_get_pub_key(SpdmRequesterContext* ctx, SpdmSessionParams* session) {
   buffer req = {writer.data, writer.bytes_written};
   buffer rsp;
 
-  rc =
-      spdm_send_request(&ctx->dispatch_ctx, /*is_secure_msg=*/false, req, &rsp);
+  rc = spdm_send_request(params->dispatch_ctx, params->scratch,
+                         /*is_secure_msg=*/false, req, &rsp);
   if (rc != 0) {
     return rc;
   }
 
   SpdmAsymPubKey pub_key_in_response;
-  rc = spdm_check_get_pub_key_rsp(&ctx->dispatch_ctx.crypto_spec, rsp,
+  rc = spdm_check_get_pub_key_rsp(&params->dispatch_ctx->crypto_spec, rsp,
                                   session->info.negotiated_algs.asym_verify_alg,
                                   session->info.negotiated_algs.hash_alg,
                                   &pub_key_in_response);
@@ -47,7 +49,7 @@ int spdm_get_pub_key(SpdmRequesterContext* ctx, SpdmSessionParams* session) {
     return rc;
   }
 
-  rc = spdm_validate_asym_pubkey(&ctx->dispatch_ctx.crypto_spec,
+  rc = spdm_validate_asym_pubkey(&params->dispatch_ctx->crypto_spec,
                                  &pub_key_in_response);
   if (rc != 0) {
     return rc;

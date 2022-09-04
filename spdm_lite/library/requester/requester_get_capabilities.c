@@ -14,21 +14,24 @@
 
 #include <string.h>
 
+#include "requester_functions.h"
+#include "send_request.h"
 #include "spdm_lite/common/messages.h"
 #include "spdm_lite/common/version.h"
 #include "spdm_lite/everparse/SPDMWrapper.h"
 #include "spdm_lite/requester/requester.h"
-#include "spdm_lite/requester/send_request.h"
 
 int spdm_get_capabilities(SpdmRequesterContext* ctx) {
+  const SpdmRequesterSessionParams* params = ctx->params;
+
   SPDM_GET_CAPABILITIES msg = {};
 
   msg.preamble.version = SPDM_THIS_VER;
   msg.preamble.request_response_code = SPDM_CODE_GET_CAPABILITIES;
 
   msg.ct_exponent = 0;
-  msg.data_transfer_size = ctx->requester_caps.data_transfer_size;
-  msg.max_spdm_message_size = ctx->requester_caps.data_transfer_size;
+  msg.data_transfer_size = params->requester_caps.data_transfer_size;
+  msg.max_spdm_message_size = params->requester_caps.data_transfer_size;
   msg.flags_ENCRYPT_CAP = 1;
   msg.flags_MAC_CAP = 1;
   msg.flags_KEY_EX_CAP = 1;
@@ -36,8 +39,8 @@ int spdm_get_capabilities(SpdmRequesterContext* ctx) {
   buffer req = {(const uint8_t*)&msg, sizeof(msg)};
   buffer rsp;
 
-  int rc =
-      spdm_send_request(&ctx->dispatch_ctx, /*is_secure_msg=*/false, req, &rsp);
+  int rc = spdm_send_request(params->dispatch_ctx, params->scratch,
+                             /*is_secure_msg=*/false, req, &rsp);
   if (rc != 0) {
     return rc;
   }

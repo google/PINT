@@ -21,7 +21,6 @@
 #include "spdm_lite/common/capabilities.h"
 #include "spdm_lite/common/crypto_types.h"
 #include "spdm_lite/common/session_types.h"
-#include "spdm_lite/common/transcript.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,37 +30,34 @@ typedef int (*spdm_dispatch_request_fn)(void* ctx, bool is_secure_msg,
                                         const uint8_t* req, size_t req_size,
                                         uint8_t* rsp, size_t* rsp_size);
 
+// Holds function pointers needed to perform crypto operations and communicate
+// with the Responder.
 typedef struct {
   SpdmCryptoSpec crypto_spec;
   spdm_dispatch_request_fn dispatch_fn;
-  void* ctx;
-
-  // Used to stage encrypted requests and responses.
-  uint8_t* scratch;
-  size_t scratch_size;
+  void* dispatch_ctx;  // Passed to `dispatch_fn`.
 } SpdmDispatchRequestCtx;
 
+// Used to stage encrypted requests and responses. Should be at least as large
+// as `(max request or response size + SPDM_SECURE_MESSAGE_OVERHEAD)`.
 typedef struct {
-  SpdmDispatchRequestCtx dispatch_ctx;
+  uint8_t* data;
+  size_t size;
+} SpdmScratchSpace;
+
+typedef struct {
+  const SpdmDispatchRequestCtx* dispatch_ctx;
+  SpdmScratchSpace scratch;
   SpdmCapabilities requester_caps;
   SpdmAsymPubKey requester_pub_key;
   void* requester_priv_key_ctx;
+} SpdmRequesterSessionParams;
 
-  SpdmNegotiationTranscript negotiation_transcript;
-
-  // Populated from `CAPABILITIES`
-  SpdmCapabilities responder_caps;
-} SpdmRequesterContext;
-
-int spdm_initialize_requester_context(
-    SpdmRequesterContext* ctx, const SpdmDispatchRequestCtx* dispatch_ctx,
-    SpdmCapabilities requester_caps, const SpdmAsymPubKey* requester_pub_key,
-    void* requester_priv_key_ctx);
-
-int spdm_establish_session(SpdmRequesterContext* ctx,
+int spdm_establish_session(const SpdmRequesterSessionParams* requester_params,
                            SpdmSessionParams* session);
 
 int spdm_dispatch_app_request(const SpdmDispatchRequestCtx* dispatch_ctx,
+                              SpdmScratchSpace scratch_space,
                               SpdmSessionParams* session, uint16_t standard_id,
                               const uint8_t* vendor_id, size_t vendor_id_size,
                               const void* req, size_t req_size, void* rsp,
@@ -69,6 +65,7 @@ int spdm_dispatch_app_request(const SpdmDispatchRequestCtx* dispatch_ctx,
 
 // Will zero out `session` on success.
 int spdm_end_session(const SpdmDispatchRequestCtx* dispatch_ctx,
+                     SpdmScratchSpace scratch_space,
                      SpdmSessionParams* session);
 
 #ifdef __cplusplus

@@ -14,6 +14,9 @@ On Debian and Ubuntu install the following packages:
 $ sudo apt install libmbedtls-dev libtss2-dev cmake
 ```
 
+Note that mbedtls and libtss2 are only needed for tests. The core spdm-lite
+library does not take a direct dependency on any external libraries.
+
 ### Build and run tests
 
 ```
@@ -36,8 +39,7 @@ Responder, as well as scratch memory used for staging encrypted requests and
 responses. The scratch memory should be as large as
 `(max request or response size + SPDM_SECURE_MESSAGE_OVERHEAD)`
 
-See `samples/requester_app.c` for some pseudocode illustrating how this can be
-done.
+See `samples/requester_app.c` which illustrates how this can be done.
 
 ### Responders
 
@@ -51,15 +53,15 @@ vendor-defined command sent within an established secure session.
 
 This implementation currently only supports one active session at a time.
 
-See `samples/responder_app.c` for some pseudocode illustrating how this can be
-done.
+See `samples/responder_app.c` which illustrates how this can be done.
 
 ### Mutual authentication
 
 This implementation requires mutual authentication. Certificate exchange is out
 of scope. As SPDM 1.2 currently does not support a mechanism for exchanging raw
-public keys, this implementation provides a custom vendor-defined command for
-this purpose. See `common/vendor_defined_pub_key.h` for the message structure.
+public keys, this implementation provides a pair of custom vendor-defined
+commands for this purpose. See `common/vendor_defined_pub_key.h` for the message
+structure.
 
 ### Crypto
 
