@@ -137,6 +137,7 @@ static int write_key_exchange_rsp_header(
   rsp_msg.param_1_heartbeat_period = 0;
   memcpy(rsp_msg.rsp_session_id, my_params->my_session_id_part, 2);
   rsp_msg.mut_auth_requested_no_encapsulated_flow = 1;
+  rsp_msg.slot_id_param_slot_id = 0xF;
 
   int rc = ctx->crypto_spec.get_random(rsp_msg.random_data,
                                        sizeof(rsp_msg.random_data));

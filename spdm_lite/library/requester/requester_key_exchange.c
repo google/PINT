@@ -218,8 +218,9 @@ static int handle_key_exchange_rsp(const SpdmNegotiatedAlgs* negotiated_algs,
     return rc;
   }
 
-  if (heartbeat_period != 0 || slot_id != 0 ||
-      mut_auth_requested_flow != MUT_AUTH_FLAG_NO_ENCAPSULATED_FLOW) {
+  if (heartbeat_period != 0 ||
+      mut_auth_requested_flow != MUT_AUTH_FLAG_NO_ENCAPSULATED_FLOW ||
+      slot_id != 0xF) {
     return -1;
   }
 

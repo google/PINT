@@ -147,7 +147,7 @@ TEST(WaitingForKeyExchange, KeyExchange) {
              &opaque_data.size, &signature, &responder_verify_data));
 
   EXPECT_EQ(heartbeat_period, 0);
-  EXPECT_EQ(slot_id, 0);
+  EXPECT_EQ(slot_id, 0xF);
   EXPECT_EQ(mut_auth_requested_flow, MUT_AUTH_FLAG_NO_ENCAPSULATED_FLOW);
 
   std::vector<uint8_t> pub_key_digest =
@@ -173,10 +173,6 @@ TEST(WaitingForKeyExchange, KeyExchange) {
   transcript_digest = GetDigest(target_digest);
   EXPECT_EQ(0, memcmp(transcript_digest.data(), ctx.session.params.th_1.data,
                       transcript_digest.size()));
-
-  EXPECT_EQ(heartbeat_period, 0);
-  EXPECT_EQ(mut_auth_requested_flow, 1);
-  EXPECT_EQ(slot_id, 0);
 
   SpdmDhePubKey peer_pub_key;
   spdm_init_dhe_pub_key(&peer_pub_key, SPDM_DHE_SECP521R1);
