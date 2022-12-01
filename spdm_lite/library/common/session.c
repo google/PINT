@@ -62,8 +62,9 @@ int spdm_encrypt_secure_message(const SpdmCryptoSpec* spec,
     return rc;
   }
 
-  // 0-16 bytes of randomness.
+  // 1-16 bytes of randomness.
   rand_len &= 0x0F;
+  rand_len++;
 
   uint8_t* footer_bytes =
       reserve_from_writer(footer, rand_len + AES_GCM_MAC_SIZE);
